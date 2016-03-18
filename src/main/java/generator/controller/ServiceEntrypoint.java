@@ -15,11 +15,17 @@
  **/
 package generator.controller;
 
+import java.io.IOException;
+
+import org.opengis.referencing.FactoryException;
+import org.opengis.referencing.operation.TransformException;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.expression.ParseException;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestMethod;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
+
 import generator.components.RasterGenerator;
 
 
@@ -29,10 +35,10 @@ public class ServiceEntrypoint {
 	@Autowired 
 	RasterGenerator rasterGenerator;
 	
-//	/*
-//	 * Entry point for accepting s3 location of the raster resource and bounding box 
-//	 * to parse and return the location of the newly created s3 resource with the given bounding box. 
-//	 */
+	/*
+	 * Entry point for accepting s3 location of the raster resource and bounding box 
+	 * to parse and return the location of the newly created s3 resource with the given bounding box. 
+	 */
 //	@RequestMapping(value = "/demo", method = RequestMethod.GET)
 //	public String demo() {
 //		System.out.println("pz-services-prevgen controller trigger...");
@@ -40,9 +46,10 @@ public class ServiceEntrypoint {
 //		return "pz-services-prevgen controller trigger..." + rasterGenerator.testDemo();
 //	}
 
-	/**
-	 * Handle payload for cropping raster file on s3
-	 * 
+	/*
+	 * Entry point for accepting s3 location of the raster resource and bounding box 
+	 * to parse and return the location of the newly created s3 resource with the given bounding box.
+	 *  
 	 * @param body
 	 *            The Json Payload
 	 * @return Response object.
@@ -50,8 +57,16 @@ public class ServiceEntrypoint {
 	@RequestMapping(value = "/crop", method = RequestMethod.POST)
 	public String processRasterResouce(@RequestParam(required = true) String body) {
 
-		rasterGenerator.cropGeoTiff();
-		System.out.println("----------------------------------------------------------------\n" + body);
+		try {
+			rasterGenerator.testWriteCroppedCoverage();
+		} catch (Exception e) {
+			
+			System.out.println("Error error... shutting down....");
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		}
+		
+		//System.out.println("----------------------------------------------------------------\n" + body);
 		return "new raster is on s3.";
 	}
 
