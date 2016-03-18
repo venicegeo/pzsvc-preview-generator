@@ -16,25 +16,34 @@
 package generator.components;
 
 import java.io.File;
+import java.io.FileInputStream;
+import java.io.FileNotFoundException;
 import java.io.IOException;
+import java.io.InputStream;
 
+import org.apache.commons.io.FileUtils;
 import org.geotools.coverage.grid.GridCoverage2D;
 import org.geotools.coverage.grid.GridGeometry2D;
-import org.geotools.coverage.grid.io.imageio.IIOMetadataDumper;
 import org.geotools.coverage.processing.CoverageProcessor;
 import org.geotools.gce.geotiff.GeoTiffFormat;
 import org.opengis.coverage.grid.GridCoverageReader;
 import org.opengis.coverage.grid.GridCoverageWriter;
 import org.opengis.coverage.grid.GridEnvelope;
 import org.opengis.parameter.ParameterValueGroup;
-import org.opengis.referencing.FactoryException;
 import org.opengis.referencing.crs.CoordinateReferenceSystem;
 import org.opengis.referencing.datum.PixelInCell;
 import org.opengis.referencing.operation.MathTransform;
-import org.opengis.referencing.operation.TransformException;
-import org.springframework.expression.ParseException;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
-import org.geotools.gce.geotiff.GeoTiffReader;
+
+import com.amazonaws.auth.BasicAWSCredentials;
+import com.amazonaws.services.s3.AmazonS3;
+import com.amazonaws.services.s3.AmazonS3Client;
+import com.amazonaws.services.s3.model.ObjectMetadata;
+
+import model.data.location.FileAccessFactory;
+import model.data.location.FileLocation;
+import model.data.location.S3FileStore;
 import org.geotools.geometry.GeneralEnvelope;
 
 /**
@@ -44,13 +53,22 @@ import org.geotools.geometry.GeneralEnvelope;
  */
 @Component
 public class RasterGenerator {
-//	@Value("${s3.key.access:}")
-//	private String AMAZONS3_ACCESS_KEY;
-//	@Value("${s3.key.private:}")
-//	private String AMAZONS3_PRIVATE_KEY;
 
-	private static final String STATIC_LOCAL_FIELD = "URL";
+//	@Autowired
+//	private UUIDFactory uuidFactory;
+
+	@Value("${s3.key.access:}")
+	private String AMAZONS3_ACCESS_KEY;
+	@Value("${s3.key.private:}")
+	private String AMAZONS3_PRIVATE_KEY;
+	@Value("${raster.temp.directory}")
+	private String RASTER_LOCAL_DIRECTORY;
+
+	private AmazonS3 s3Client;
 	
+	private static final String AWS_BUCKET_NAME = "external-public-access-test";
+	private static final String AWS_DOMAIN = "s3.amazonaws.com";
+
 	public String cropGeoTiff() {
 		
 		return "true";
@@ -58,49 +76,31 @@ public class RasterGenerator {
 	
 	/**
 	 * Create a cropped coverage.
-	 * 
-	 * @throws IllegalArgumentException
-	 * @throws IOException
-	 * @throws UnsupportedOperationException
-	 * @throws ParseException
-	 * @throws FactoryException
-	 * @throws TransformException
+	 * @throws Exception 
 	 */
-	public void testWriteCroppedCoverage() throws IllegalArgumentException,
-			IOException, UnsupportedOperationException, ParseException,
-			FactoryException, TransformException {
-
-		boolean interactive = false;
+	public void cropRasterCoverage() throws Exception {
 
 		// Grab the original file to want to crop from s3
-		final File readdir = new File("C:\\geoFiles\\geotiff"); //TestData.file(GeoTiffWriterTest.class, "");
-		final File writedir = new File(new StringBuilder(readdir.getAbsolutePath()).append("\\writeDir").toString());
-		writedir.mkdir();
+		//FileLocation fileLocation = new S3FileStore("external-public-access-test", "NASA-GDEM-10km-colorized.tif", "s3.amazonaws.com");
+		FileLocation fileLocation = new S3FileStore("external-public-access-test", "nasa_land_ocean_ice.tif", "s3.amazonaws.com");
+		File tiff = getFileFromS3(fileLocation);
+		//assert tiff.exists() && tiff.canRead() && tiff.isFile();
 
-		//String geotiffPath = String.format("%s%s%s", readdir.getAbsolutePath(), File.separator, "nasa_land_ocean_ice.tif");
-		String geotiffPath = String.format("%s%s%s", readdir.getAbsolutePath(), File.separator, "NASA-GDEM-10km-colorized.tif");
-		
-		final File tiff = new File(geotiffPath);
-		assert tiff.exists() && tiff.canRead() && tiff.isFile();
-		
+		// create temporary local write directory
+		File localWriteDir = new File(String.format("%s%s%s", RASTER_LOCAL_DIRECTORY, File.separator, "writeDir"));
+		localWriteDir.mkdir();
+
 		// Create format and reader
 		final GeoTiffFormat format = new GeoTiffFormat();
-		// getting a reader
 		GridCoverageReader reader = format.getReader(tiff);
 
-		// print metadata
-		IIOMetadataDumper metadataDumper = new IIOMetadataDumper(((GeoTiffReader) reader).getMetadata().getRootNode());
-		System.out.println("----------------------------------- metadata from tiff: " + tiff.getAbsolutePath() + "\n" + metadataDumper.getMetadata());
-		
 		// Read the original coverage.
 		GridCoverage2D gc = (GridCoverage2D) reader.read(null);
-		System.out.println(new StringBuilder("\n-----\nCoverage before: ").append("\n").append(gc.getCoordinateReferenceSystem().toWKT())
-				.append(gc.getEnvelope().toString()).toString());
-
-		final CoordinateReferenceSystem sourceCRS = gc.getCoordinateReferenceSystem2D();
+	
+		//final CoordinateReferenceSystem sourceCRS = gc.getCoordinateReferenceSystem2D();
 		final GeneralEnvelope sourceEnvelope = (GeneralEnvelope) gc.getEnvelope();
-		final GridGeometry2D sourcedGG = (GridGeometry2D) gc.getGridGeometry();
-		final MathTransform sourceG2W = sourcedGG.getGridToCRS(PixelInCell.CELL_CENTER);
+		//final GridGeometry2D sourcedGG = (GridGeometry2D) gc.getGridGeometry();
+		//final MathTransform sourceG2W = sourcedGG.getGridToCRS(PixelInCell.CELL_CENTER);
 
 		// Crop the raster
 		double xc = sourceEnvelope.getMedian(0);
@@ -114,84 +114,90 @@ public class RasterGenerator {
 		param.parameter("Envelope").setValue(cropEnvelope);
 		final GridCoverage2D cropped = (GridCoverage2D) processor.doOperation(param);
 
-
 		// checking the ranges of the output image.
-		final GridGeometry2D croppedGG = (GridGeometry2D) cropped.getGridGeometry();
-		final GridEnvelope croppedGR = croppedGG.getGridRange();
-		final MathTransform croppedG2W = croppedGG.getGridToCRS(PixelInCell.CELL_CENTER);
-		final GeneralEnvelope croppedEnvelope = (GeneralEnvelope) cropped.getEnvelope();
+		//final GridGeometry2D croppedGG = (GridGeometry2D) cropped.getGridGeometry();
+		//final GridEnvelope croppedGR = croppedGG.getGridRange();
+		//final MathTransform croppedG2W = croppedGG.getGridToCRS(PixelInCell.CELL_CENTER);
+		//final GeneralEnvelope croppedEnvelope = (GeneralEnvelope) cropped.getEnvelope();
 		
-		// check that the affine transform are the same thing
-		//Assert.assertTrue("The Grdi2World tranformations of the original and the cropped covearage do not match", sourceG2W.equals(croppedG2W));
-		
-		// check that the envelope is correct
-		final GeneralEnvelope expectedEnvelope = new GeneralEnvelope(croppedGR,PixelInCell.CELL_CENTER, croppedG2W, cropped.getCoordinateReferenceSystem2D());
+		// Check that the envelope is correct
+		//final GeneralEnvelope expectedEnvelope = new GeneralEnvelope(croppedGR,PixelInCell.CELL_CENTER, croppedG2W, cropped.getCoordinateReferenceSystem2D());
 		//Assert.assertTrue("Expected envelope is different from the computed one",expectedEnvelope.equals(croppedEnvelope, XAffineTransform.getScale((AffineTransform) croppedG2W) / 2.0, false));
 
+		// WRITING AND TESTING
+		String newFilePath = new StringBuilder(localWriteDir.getAbsolutePath()).append(File.separator).append(cropped.getName().toString()).append(".tif").toString();
+		final File s3File = new File(newFilePath);
+		final GridCoverageWriter writer = format.getWriter(s3File);
+
+		// Write cropped raster into the file
+		try {
+			writer.write(cropped, null);
+		} catch (IOException e) {
+		} finally {
+			try {
+				writer.dispose();
+			} catch (Throwable e) {
+			}
+		}
+
+		// persist new raster
+		writeFileToS3(s3File);
+
+		// Close things
 		// Dispose things
 		cropped.dispose(true);
 		gc.dispose(true);
+		
 		try {
 			if (reader != null)
 				reader.dispose();
 		} catch (Throwable e) {
 		}
-		
-		// WRITING AND TESTING
-		final File writeFile = new File(new StringBuilder(writedir.getAbsolutePath()).append(File.separator).append(cropped.getName().toString()).append(".tif").toString());
-		final GridCoverageWriter writer = format.getWriter(writeFile);
 
-		try{
-			writer.write(cropped, null);
-		}catch (IOException e) {
-		}
-		finally{
-			try{
-				writer.dispose();
-			}catch (Throwable e) {
-			}
-		}
-
-//		try{
-//			reader = new GeoTiffReader(writeFile, null);
-////			assertNotNull(reader);
-//			
-//			gc = (GridCoverage2D) reader.read(null);
-////			assertNotNull(gc);
-//			
-//			final CoordinateReferenceSystem targetCRS = gc.getCoordinateReferenceSystem2D();
-//			//Assert.assertTrue("Source and Target coordinate reference systems do not match", CRS.equalsIgnoreMetadata(sourceCRS, targetCRS));
-//			//Assert.assertEquals("Read-back and Cropped envelopes do not match", cropped.getEnvelope(), croppedEnvelope);
-//	
-//			if (interactive) {
-//				System.out.println(new StringBuilder("Coverage after: ").append("\n").append(gc.getCoordinateReferenceSystem().toWKT())
-//						.append(gc.getEnvelope().toString()).toString());
-//				if (interactive)
-//					gc.show();
-//				else
-//					PlanarImage.wrapRenderedImage(gc.getRenderedImage()).getTiles();
-//			}
-//
-//		} finally {
-//			try {
-//				if (reader != null) {
-//					reader.dispose();
-//				}
-//			} catch (Throwable e) {
-//			}
-//
-//			// if(!interactive)
-//			// gc.dispose(true);
-//		}
-		
-		
-		
-		
-		
-		
+		// Delete local raster
+		//System.gc(); //java garbage collector
+		tiff.delete();
 	}
 	
+	/**
+	 * Upload file to an s3 bucket
+	 * 
+	 * @param file the object
+	 */
+	private void writeFileToS3(File file) throws FileNotFoundException{
+		ObjectMetadata metadata = new ObjectMetadata();
+		metadata.setContentLength(file.length());
+		
+		// fix the id, either uuid gen or use dataresource to pull from.
+		Long randdom = Long.valueOf((int)(Math.random()*100000));
+		String fileKey = String.format("%s-%s-%s", "croppedRaster", randdom.toString(), file.getName());
+		
+		BasicAWSCredentials credentials = new BasicAWSCredentials(AMAZONS3_ACCESS_KEY, AMAZONS3_PRIVATE_KEY);
+		s3Client = new AmazonS3Client(credentials);
+		InputStream inputStream = new FileInputStream(file);
+		s3Client.putObject(AWS_BUCKET_NAME, fileKey, inputStream, metadata);
+	}
 	
-	
-	
+	/**
+	 * Will copy file from s3 to local dir and return the file
+	 * 
+	 * @param fileLocation
+	 *            Interface to get file info from.
+	 * @return File file object
+	 * @throws Exception
+	 * @throws IOException
+	 */
+	private File getFileFromS3(FileLocation fileLocation) throws IOException, Exception {
+		
+		// Get file stream from AWS S3
+		FileAccessFactory fileFactory = new FileAccessFactory(AMAZONS3_ACCESS_KEY, AMAZONS3_PRIVATE_KEY);
+		File file = new File(String.format("%s%s%s", RASTER_LOCAL_DIRECTORY, File.separator, fileLocation.getFileName()));
+		//file.createNewFile();
+		
+		InputStream inputStream = fileFactory.getFile(fileLocation);
+		FileUtils.copyInputStreamToFile(inputStream, file);
+		inputStream.close();
+
+		return file;
+	}
 }
