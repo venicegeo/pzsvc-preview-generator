@@ -23,16 +23,11 @@ import java.io.InputStream;
 
 import org.apache.commons.io.FileUtils;
 import org.geotools.coverage.grid.GridCoverage2D;
-import org.geotools.coverage.grid.GridGeometry2D;
 import org.geotools.coverage.processing.CoverageProcessor;
 import org.geotools.gce.geotiff.GeoTiffFormat;
 import org.opengis.coverage.grid.GridCoverageReader;
 import org.opengis.coverage.grid.GridCoverageWriter;
-import org.opengis.coverage.grid.GridEnvelope;
 import org.opengis.parameter.ParameterValueGroup;
-import org.opengis.referencing.crs.CoordinateReferenceSystem;
-import org.opengis.referencing.datum.PixelInCell;
-import org.opengis.referencing.operation.MathTransform;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
 
@@ -41,6 +36,7 @@ import com.amazonaws.services.s3.AmazonS3;
 import com.amazonaws.services.s3.AmazonS3Client;
 import com.amazonaws.services.s3.model.ObjectMetadata;
 
+import generator.model.RasterCropRequest;
 import model.data.location.FileAccessFactory;
 import model.data.location.FileLocation;
 import model.data.location.S3FileStore;
@@ -78,11 +74,13 @@ public class RasterGenerator {
 	 * Create a cropped coverage.
 	 * @throws Exception 
 	 */
-	public void cropRasterCoverage() throws Exception {
+	public void cropRasterCoverage(RasterCropRequest request) throws Exception {
 
 		// Grab the original file to want to crop from s3
+		
+		FileLocation fileLocation = new S3FileStore(request.getSource().getBucketName(), request.getSource().getFileName(), request.getSource().getDomain());
 		//FileLocation fileLocation = new S3FileStore("external-public-access-test", "NASA-GDEM-10km-colorized.tif", "s3.amazonaws.com");
-		FileLocation fileLocation = new S3FileStore("external-public-access-test", "nasa_land_ocean_ice.tif", "s3.amazonaws.com");
+		//FileLocation fileLocation = new S3FileStore("external-public-access-test", "nasa_land_ocean_ice.tif", "s3.amazonaws.com");
 		File tiff = getFileFromS3(fileLocation);
 		//assert tiff.exists() && tiff.canRead() && tiff.isFile();
 
@@ -107,7 +105,11 @@ public class RasterGenerator {
 		double yc = sourceEnvelope.getMedian(1);
 		double xl = sourceEnvelope.getSpan(0);
 		double yl = sourceEnvelope.getSpan(1);
-		final GeneralEnvelope cropEnvelope = new GeneralEnvelope(new double[] { xc - xl / 4.0, yc - yl / 4.0 }, new double[] { xc + xl / 4.0, yc + yl / 4.0 });
+		
+		// pipe in values
+		System.out.println("bounds:\n" + xc + "\n" + yc + "\n" + xl + "\n" + yl);
+		final GeneralEnvelope cropEnvelope = new GeneralEnvelope(new double[] { xc - xl / 8.0, yc - yl / 8.0 }, new double[] { xc + xl / 8.0, yc + yl / 8.0 });
+		
 		final CoverageProcessor processor = CoverageProcessor.getInstance();
 		final ParameterValueGroup param = processor.getOperation("CoverageCrop").getParameters();
 		param.parameter("Source").setValue(gc);

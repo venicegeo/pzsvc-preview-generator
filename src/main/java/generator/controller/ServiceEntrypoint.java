@@ -21,7 +21,11 @@ import org.springframework.web.bind.annotation.RequestMethod;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
+import com.fasterxml.jackson.databind.ObjectMapper;
+
 import generator.components.RasterGenerator;
+import generator.model.RasterCropRequest;
+import model.request.FileRequest;
 
 /**
  * Handles raster location payloads, and processes them from s3.
@@ -51,7 +55,11 @@ public class ServiceEntrypoint {
 	public String processRasterResouce(@RequestParam(required = true) String body) {
 
 		try {
-			rasterGenerator.cropRasterCoverage();
+			// Parse the Request String
+			RasterCropRequest request = new ObjectMapper().readValue(body, RasterCropRequest.class);
+			System.out.println("\n---------------------------------\n /crop payload body: \n" + request.function +  " -- " + request.bounds.maxx + " -- " + request.source.bucketName);
+			
+			rasterGenerator.cropRasterCoverage(request);
 		} catch (Exception e) {
 			// TODO Auto-generated catch block
 			e.printStackTrace();
