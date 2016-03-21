@@ -28,6 +28,7 @@ import org.geotools.gce.geotiff.GeoTiffFormat;
 import org.opengis.coverage.grid.GridCoverageReader;
 import org.opengis.coverage.grid.GridCoverageWriter;
 import org.opengis.parameter.ParameterValueGroup;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
 
@@ -37,9 +38,13 @@ import com.amazonaws.services.s3.AmazonS3Client;
 import com.amazonaws.services.s3.model.ObjectMetadata;
 
 import generator.model.RasterCropRequest;
+import model.data.DataType;
 import model.data.location.FileAccessFactory;
 import model.data.location.FileLocation;
 import model.data.location.S3FileStore;
+import model.data.type.RasterDataType;
+import util.UUIDFactory;
+
 import org.geotools.geometry.GeneralEnvelope;
 
 /**
@@ -50,8 +55,8 @@ import org.geotools.geometry.GeneralEnvelope;
 @Component
 public class RasterGenerator {
 
-//	@Autowired
-//	private UUIDFactory uuidFactory;
+	@Autowired
+	private UUIDFactory uuidFactory;
 
 	@Value("${s3.key.access:}")
 	private String AMAZONS3_ACCESS_KEY;
@@ -76,62 +81,48 @@ public class RasterGenerator {
 	 */
 	public void cropRasterCoverage(RasterCropRequest request) throws Exception {
 
-		// Grab the original file to want to crop from s3
-		
+		// Read Original File to From S3
 		FileLocation fileLocation = new S3FileStore(request.getSource().getBucketName(), request.getSource().getFileName(), request.getSource().getDomain());
-		//FileLocation fileLocation = new S3FileStore("external-public-access-test", "NASA-GDEM-10km-colorized.tif", "s3.amazonaws.com");
-		//FileLocation fileLocation = new S3FileStore("external-public-access-test", "nasa_land_ocean_ice.tif", "s3.amazonaws.com");
 		File tiff = getFileFromS3(fileLocation);
-		//assert tiff.exists() && tiff.canRead() && tiff.isFile();
 
-		// create temporary local write directory
+		// Create Temporary Local Write Directory
 		File localWriteDir = new File(String.format("%s%s%s", RASTER_LOCAL_DIRECTORY, File.separator, "writeDir"));
 		localWriteDir.mkdir();
 
-		// Create format and reader
+		// Create Format and Reader
 		final GeoTiffFormat format = new GeoTiffFormat();
 		GridCoverageReader reader = format.getReader(tiff);
 
-		// Read the original coverage.
-		GridCoverage2D gc = (GridCoverage2D) reader.read(null);
-	
-		//final CoordinateReferenceSystem sourceCRS = gc.getCoordinateReferenceSystem2D();
-		final GeneralEnvelope sourceEnvelope = (GeneralEnvelope) gc.getEnvelope();
-		//final GridGeometry2D sourcedGG = (GridGeometry2D) gc.getGridGeometry();
-		//final MathTransform sourceG2W = sourcedGG.getGridToCRS(PixelInCell.CELL_CENTER);
+		// Read Original Coverage.
+		GridCoverage2D gridCoverage = (GridCoverage2D) reader.read(null);
+		final GeneralEnvelope sourceEnvelope = (GeneralEnvelope) gridCoverage.getEnvelope();
+
 
 		// Crop the raster
-		double xc = sourceEnvelope.getMedian(0);
-		double yc = sourceEnvelope.getMedian(1);
-		double xl = sourceEnvelope.getSpan(0);
-		double yl = sourceEnvelope.getSpan(1);
+		//double xmin = sourceEnvelope.getMinimum(0);
+		//double ymin = sourceEnvelope.getMinimum(1);
+		//double xmax = sourceEnvelope.getMaximum(0);
+		//double ymax = sourceEnvelope.getMaximum(1);
 		
-		// pipe in values
-		System.out.println("bounds:\n" + xc + "\n" + yc + "\n" + xl + "\n" + yl);
-		final GeneralEnvelope cropEnvelope = new GeneralEnvelope(new double[] { xc - xl / 8.0, yc - yl / 8.0 }, new double[] { xc + xl / 8.0, yc + yl / 8.0 });
+		double xmin = request.getBounds().getMinx();
+		double ymin = request.getBounds().getMiny();
+		double xmax = request.getBounds().getMaxx();
+		double ymax = request.getBounds().getMaxy();
+		
+		// Set the Crop Envelope
+		final GeneralEnvelope cropEnvelope = new GeneralEnvelope(new double[] { xmin, ymin}, new double[] { xmax, ymax});
 		
 		final CoverageProcessor processor = CoverageProcessor.getInstance();
 		final ParameterValueGroup param = processor.getOperation("CoverageCrop").getParameters();
-		param.parameter("Source").setValue(gc);
+		param.parameter("Source").setValue(gridCoverage);
 		param.parameter("Envelope").setValue(cropEnvelope);
 		final GridCoverage2D cropped = (GridCoverage2D) processor.doOperation(param);
 
-		// checking the ranges of the output image.
-		//final GridGeometry2D croppedGG = (GridGeometry2D) cropped.getGridGeometry();
-		//final GridEnvelope croppedGR = croppedGG.getGridRange();
-		//final MathTransform croppedG2W = croppedGG.getGridToCRS(PixelInCell.CELL_CENTER);
-		//final GeneralEnvelope croppedEnvelope = (GeneralEnvelope) cropped.getEnvelope();
-		
-		// Check that the envelope is correct
-		//final GeneralEnvelope expectedEnvelope = new GeneralEnvelope(croppedGR,PixelInCell.CELL_CENTER, croppedG2W, cropped.getCoordinateReferenceSystem2D());
-		//Assert.assertTrue("Expected envelope is different from the computed one",expectedEnvelope.equals(croppedEnvelope, XAffineTransform.getScale((AffineTransform) croppedG2W) / 2.0, false));
 
-		// WRITING AND TESTING
+		// Writing Cropped Image to File
 		String newFilePath = new StringBuilder(localWriteDir.getAbsolutePath()).append(File.separator).append(cropped.getName().toString()).append(".tif").toString();
 		final File s3File = new File(newFilePath);
 		final GridCoverageWriter writer = format.getWriter(s3File);
-
-		// Write cropped raster into the file
 		try {
 			writer.write(cropped, null);
 		} catch (IOException e) {
@@ -145,20 +136,30 @@ public class RasterGenerator {
 		// persist new raster
 		writeFileToS3(s3File);
 
-		// Close things
-		// Dispose things
+		// Close Things
 		cropped.dispose(true);
-		gc.dispose(true);
-		
+		gridCoverage.dispose(true);
 		try {
 			if (reader != null)
 				reader.dispose();
 		} catch (Throwable e) {
+
 		}
 
 		// Delete local raster
 		//System.gc(); //java garbage collector
 		tiff.delete();
+
+//		//create data type to return
+//		S3FileStore s3Store = new S3FileStore();
+//		s3Store.domainName = "domainName";
+//		s3Store.bucketName = "bucketName";
+//		s3Store.fileName = "filename";
+//		
+//		
+//		RasterDataType dataType = new RasterDataType();
+//		dataType.setLocation(s3Store);
+//		dataType.setMimeType("image/tiff");
 	}
 	
 	/**
@@ -170,9 +171,8 @@ public class RasterGenerator {
 		ObjectMetadata metadata = new ObjectMetadata();
 		metadata.setContentLength(file.length());
 		
-		// fix the id, either uuid gen or use dataresource to pull from.
-		Long randdom = Long.valueOf((int)(Math.random()*100000));
-		String fileKey = String.format("%s-%s-%s", "croppedRaster", randdom.toString(), file.getName());
+		String uniqueId = uuidFactory.getUUID();
+		String fileKey = String.format("%s-%s-%s", "croppedRaster", uniqueId, file.getName());
 		
 		BasicAWSCredentials credentials = new BasicAWSCredentials(AMAZONS3_ACCESS_KEY, AMAZONS3_PRIVATE_KEY);
 		s3Client = new AmazonS3Client(credentials);
@@ -181,7 +181,7 @@ public class RasterGenerator {
 	}
 	
 	/**
-	 * Will copy file from s3 to local dir and return the file
+	 * Will Copy File from S3 to Local Dir and Return the File
 	 * 
 	 * @param fileLocation
 	 *            Interface to get file info from.
