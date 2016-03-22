@@ -16,19 +16,17 @@
 package generator.controller;
 
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.http.MediaType;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestMethod;
 import org.springframework.web.bind.annotation.RequestParam;
-import org.springframework.web.bind.annotation.ResponseBody;
 import org.springframework.web.bind.annotation.RestController;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 
 import generator.components.RasterGenerator;
 import generator.model.RasterCropRequest;
-import model.request.FileRequest;
+import model.data.DataResource;
 
 /**
  * Handles raster location payloads, and processes them from s3.
@@ -56,13 +54,30 @@ public class ServiceEntrypoint {
 	 */
 	@RequestMapping(value = "/crop", method = RequestMethod.POST)
 	public String processRasterResouce(@RequestParam(required = true) String body) {
-
+//@requestbody
 		try {
 			// Parse the Request String
 			RasterCropRequest request = new ObjectMapper().readValue(body, RasterCropRequest.class);
 			System.out.println("\n---------------------------------\n /crop payload body: \n" + request.function +  " -- " + request.bounds.maxx + " -- " + request.source.bucketName);
 			
-			rasterGenerator.cropRasterCoverage(request);
+			DataResource dataResource = rasterGenerator.cropRasterCoverage(request);
+		} catch (Exception e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		}
+		
+		return "new raster is on s3.";
+	}
+	
+	
+	@RequestMapping(value = "/crop2", method = RequestMethod.POST)
+	public String processRasterResouce222(@RequestBody RasterCropRequest request) {
+		try {
+			// Parse the Request String
+			//RasterCropRequest request = new ObjectMapper().readValue(body, RasterCropRequest.class);
+			System.out.println("\n---------------------------------\n /crop payload body: \n" + request.function +  " -- " + request.bounds.maxx + " -- " + request.source.bucketName);
+			
+			DataResource dataResource = rasterGenerator.cropRasterCoverage(request);
 		} catch (Exception e) {
 			// TODO Auto-generated catch block
 			e.printStackTrace();

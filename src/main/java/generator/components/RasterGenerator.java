@@ -38,16 +38,20 @@ import com.amazonaws.services.s3.AmazonS3Client;
 import com.amazonaws.services.s3.model.ObjectMetadata;
 
 import generator.model.RasterCropRequest;
-import model.data.DataType;
+import model.data.DataResource;
 import model.data.location.FileAccessFactory;
 import model.data.location.FileLocation;
 import model.data.location.S3FileStore;
 import model.data.type.RasterDataType;
+import model.job.metadata.ResourceMetadata;
 import util.UUIDFactory;
 
 import org.geotools.geometry.GeneralEnvelope;
 
 /**
+ * 
+ * Service to crop the raster resource. It will read raster from S3 to local disk, 
+ * crop it, and upload it back up to the same s3 bucket.
  * 
  * @author Sonny.Saniev
  * 
@@ -67,9 +71,6 @@ public class RasterGenerator {
 
 	private AmazonS3 s3Client;
 	
-	private static final String AWS_BUCKET_NAME = "external-public-access-test";
-	private static final String AWS_DOMAIN = "s3.amazonaws.com";
-
 	public String cropGeoTiff() {
 		
 		return "true";
@@ -77,9 +78,12 @@ public class RasterGenerator {
 	
 	/**
 	 * Create a cropped coverage.
+	 * 
+	 * @param RasterCropRequest Payload to Describe the Resource Location and Bounding Box.
+	 * 
 	 * @throws Exception 
 	 */
-	public void cropRasterCoverage(RasterCropRequest request) throws Exception {
+	public DataResource cropRasterCoverage(RasterCropRequest request) throws Exception {
 
 		// Read Original File to From S3
 		FileLocation fileLocation = new S3FileStore(request.getSource().getBucketName(), request.getSource().getFileName(), request.getSource().getDomain());
@@ -95,29 +99,20 @@ public class RasterGenerator {
 
 		// Read Original Coverage.
 		GridCoverage2D gridCoverage = (GridCoverage2D) reader.read(null);
-		final GeneralEnvelope sourceEnvelope = (GeneralEnvelope) gridCoverage.getEnvelope();
-
-
-		// Crop the raster
-		//double xmin = sourceEnvelope.getMinimum(0);
-		//double ymin = sourceEnvelope.getMinimum(1);
-		//double xmax = sourceEnvelope.getMaximum(0);
-		//double ymax = sourceEnvelope.getMaximum(1);
 		
+		// Set the Crop Envelope
 		double xmin = request.getBounds().getMinx();
 		double ymin = request.getBounds().getMiny();
 		double xmax = request.getBounds().getMaxx();
 		double ymax = request.getBounds().getMaxy();
-		
-		// Set the Crop Envelope
 		final GeneralEnvelope cropEnvelope = new GeneralEnvelope(new double[] { xmin, ymin}, new double[] { xmax, ymax});
-		
+
+		// Crop the Raster
 		final CoverageProcessor processor = CoverageProcessor.getInstance();
 		final ParameterValueGroup param = processor.getOperation("CoverageCrop").getParameters();
 		param.parameter("Source").setValue(gridCoverage);
 		param.parameter("Envelope").setValue(cropEnvelope);
 		final GridCoverage2D cropped = (GridCoverage2D) processor.doOperation(param);
-
 
 		// Writing Cropped Image to File
 		String newFilePath = new StringBuilder(localWriteDir.getAbsolutePath()).append(File.separator).append(cropped.getName().toString()).append(".tif").toString();
@@ -133,8 +128,8 @@ public class RasterGenerator {
 			}
 		}
 
-		// persist new raster
-		writeFileToS3(s3File);
+		// Persist Cropped Raster to S3 Bucket
+		String fileName = writeFileToS3(s3File, fileLocation);
 
 		// Close Things
 		cropped.dispose(true);
@@ -147,19 +142,42 @@ public class RasterGenerator {
 		}
 
 		// Delete local raster
-		//System.gc(); //java garbage collector
+		//System.gc(); //Java Garbage Collector
 		tiff.delete();
 
-//		//create data type to return
-//		S3FileStore s3Store = new S3FileStore();
-//		s3Store.domainName = "domainName";
-//		s3Store.bucketName = "bucketName";
-//		s3Store.fileName = "filename";
-//		
-//		
-//		RasterDataType dataType = new RasterDataType();
-//		dataType.setLocation(s3Store);
-//		dataType.setMimeType("image/tiff");
+		return getDataSource(fileName, request);
+	}
+	
+	/**
+	 * Getting DataResource as a return type
+	 * 
+	 * @param id, request
+	 * @return DataResource
+	 */
+	private DataResource getDataSource(String id, RasterCropRequest request){
+		
+		//create data type to return
+		S3FileStore s3Store = new S3FileStore();
+		s3Store.domainName = request.getSource().getDomain();
+		s3Store.bucketName = request.getSource().getBucketName();
+		s3Store.fileName = id;
+		
+		RasterDataType dataType = new RasterDataType();
+		dataType.setLocation(s3Store);
+		dataType.setMimeType("image/tiff");
+		
+		ResourceMetadata resourceMetadata = new ResourceMetadata();
+		resourceMetadata.name = "External Crop Raster Service";
+		resourceMetadata.description = "Service that takes payload containing S3 location and bounding box for some raster file, downloads, crops and uploads the crop back up to s3.";
+		resourceMetadata.url = "http://host:8086/crop";
+		resourceMetadata.method = "POST";
+		resourceMetadata.id = id;
+		
+		DataResource dataSource = new DataResource();
+		dataSource.dataType=dataType;
+		dataSource.metadata = resourceMetadata;
+		
+		return dataSource;
 	}
 	
 	/**
@@ -167,7 +185,7 @@ public class RasterGenerator {
 	 * 
 	 * @param file the object
 	 */
-	private void writeFileToS3(File file) throws FileNotFoundException{
+	private String writeFileToS3(File file, FileLocation fileLocation) throws FileNotFoundException{
 		ObjectMetadata metadata = new ObjectMetadata();
 		metadata.setContentLength(file.length());
 		
@@ -177,7 +195,12 @@ public class RasterGenerator {
 		BasicAWSCredentials credentials = new BasicAWSCredentials(AMAZONS3_ACCESS_KEY, AMAZONS3_PRIVATE_KEY);
 		s3Client = new AmazonS3Client(credentials);
 		InputStream inputStream = new FileInputStream(file);
-		s3Client.putObject(AWS_BUCKET_NAME, fileKey, inputStream, metadata);
+		
+		S3FileStore s3Store = (S3FileStore)fileLocation;
+		
+		s3Client.putObject(s3Store.getBucketName(), fileKey, inputStream, metadata);
+		
+		return fileKey;
 	}
 	
 	/**
@@ -195,7 +218,7 @@ public class RasterGenerator {
 		FileAccessFactory fileFactory = new FileAccessFactory(AMAZONS3_ACCESS_KEY, AMAZONS3_PRIVATE_KEY);
 		File file = new File(String.format("%s%s%s", RASTER_LOCAL_DIRECTORY, File.separator, fileLocation.getFileName()));
 		//file.createNewFile();
-		
+
 		InputStream inputStream = fileFactory.getFile(fileLocation);
 		FileUtils.copyInputStreamToFile(inputStream, file);
 		inputStream.close();
