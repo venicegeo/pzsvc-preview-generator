@@ -29,10 +29,11 @@ import generator.model.RasterCropRequest;
 import model.data.DataResource;
 
 /**
- * Handles raster location payloads, and processes them from s3.
+ * Handles raster resource payload requests, and processes them from s3.
  * 
- * The controller accepts payload containing the location of s3 raster file
- * crops the raster into provided bounding box and stores it back up in s3 buckets.
+ * The controller acts as an entry point for a service that accepts payload containing 
+ * the location of s3 raster file, crops the raster into provided 
+ * bounding box and stores it back in s3 buckets.
  * 
  * @author Sonny.Saniev
  * 
@@ -53,81 +54,37 @@ public class ServiceEntrypoint {
 	 * @return Response object.
 	 */
 	@RequestMapping(value = "/crop", method = RequestMethod.POST)
-	public String processRasterResouce(@RequestParam(required = true) String body) {
-//@requestbody
+	public DataResource processRasterResouce222(@RequestBody RasterCropRequest request) {
+		DataResource dataResource = new DataResource();
+			try {
+				dataResource = rasterGenerator.cropRasterCoverage(request);
+			} catch (Exception e) {
+				// TODO Auto-generated catch block
+				e.printStackTrace();
+			}
+		return dataResource;
+	}
+	
+	/*
+	 * Entry point for accepting s3 location of the raster resource and bounding box 
+	 * to parse and return the location of the newly created s3 resource with the given bounding box.
+	 *  
+	 * @param body
+	 *            The Json Payload
+	 * @return Response object.
+	 */
+	@RequestMapping(value = "/cropFormData", method = RequestMethod.POST)
+	public DataResource processRasterResouce(@RequestParam(required = true) String body) {
+		DataResource dataResource = new DataResource();
 		try {
 			// Parse the Request String
 			RasterCropRequest request = new ObjectMapper().readValue(body, RasterCropRequest.class);
-			System.out.println("\n---------------------------------\n /crop payload body: \n" + request.function +  " -- " + request.bounds.maxx + " -- " + request.source.bucketName);
-			
-			DataResource dataResource = rasterGenerator.cropRasterCoverage(request);
+			dataResource = rasterGenerator.cropRasterCoverage(request);
 		} catch (Exception e) {
 			// TODO Auto-generated catch block
 			e.printStackTrace();
 		}
 		
-		return "new raster is on s3.";
-	}
-	
-	
-	@RequestMapping(value = "/crop2", method = RequestMethod.POST)
-	public String processRasterResouce222(@RequestBody RasterCropRequest request) {
-		try {
-			// Parse the Request String
-			//RasterCropRequest request = new ObjectMapper().readValue(body, RasterCropRequest.class);
-			System.out.println("\n---------------------------------\n /crop payload body: \n" + request.function +  " -- " + request.bounds.maxx + " -- " + request.source.bucketName);
-			
-			DataResource dataResource = rasterGenerator.cropRasterCoverage(request);
-		} catch (Exception e) {
-			// TODO Auto-generated catch block
-			e.printStackTrace();
-		}
-		
-		return "new raster is on s3.";
-	}
-	
-	@RequestMapping(value = "/cropRaw", method = RequestMethod.POST)
-	public String processRasterResouceRawType(@RequestBody String body) {
-
-		try {
-			// Parse the Request String
-			RasterCropRequest request = new ObjectMapper().readValue(body, RasterCropRequest.class);
-			System.out.println("\n---------------------------------\n /crop payload body: \n" + request.function +  " -- " + request.bounds.maxx + " -- " + request.source.bucketName);
-			
-			rasterGenerator.cropRasterCoverage(request);
-		} catch (Exception e) {
-			// TODO Auto-generated catch block
-			e.printStackTrace();
-		}
-		
-		return "new raster is on s3.";
-	}
-	
-//	@RequestMapping(value = "/string/convert", method = RequestMethod.POST, headers="Accept=application/json", produces=MediaType.APPLICATION_JSON_VALUE)
-//	public @ResponseBody String convert(@RequestBody Message msg) {
-//		
-//		String result = "Could not Convert, please check message";
-//		String conversionType = msg.getConversionType();
-//		String theString = msg.gettheString();
-//		if ((conversionType != null) && (theString != null)) {
-//			if (conversionType.equals(Message.UPPER))  {
-//				LOGGER.info("Make the String uppercase" + theString);
-//				LOGGER.info("The message" + msg);
-//		        result=convertStringtoUpper(theString);
-//			} 
-//			else if (conversionType.equals(Message.LOWER))  {
-//				LOGGER.info("Make the String lower case" + theString);
-//				result=convertStringtoLower(theString);
-//		       
-//			}
-//		}
-//		
-//		return result;
-//
-//		
-//	}
-	
-	
-	
-	
+		return dataResource;
+	}	
 }
