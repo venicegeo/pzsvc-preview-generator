@@ -109,7 +109,7 @@ public class RasterGenerator {
 		final ParameterValueGroup param = processor.getOperation("CoverageCrop").getParameters();
 		param.parameter("Source").setValue(gridCoverage);
 		param.parameter("Envelope").setValue(cropEnvelope);
-		final GridCoverage2D cropped = (GridCoverage2D) processor.doOperation(param);
+		GridCoverage2D cropped = (GridCoverage2D) processor.doOperation(param);
 
 		// Writing Cropped Image to File
 		String newFilePath = new StringBuilder(localWriteDir.getAbsolutePath()).append(File.separator).append(cropped.getName().toString()).append(".tif").toString();
@@ -137,9 +137,6 @@ public class RasterGenerator {
 		} catch (Throwable e) {
 
 		}
-//		writer = null;
-//		cropped = null;
-//		gridCoverage = null;
 
 		// Delete local raster
 		//System.gc(); //Java Garbage Collector
@@ -149,7 +146,7 @@ public class RasterGenerator {
 	}
 	
 	/**
-	 * Getting DataResource as a return type
+	 * Getting DataResource for a return type
 	 * 
 	 * @param id, request
 	 * @return DataResource
