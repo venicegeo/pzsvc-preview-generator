@@ -46,15 +46,15 @@ public class ServiceEntrypoint {
 	RasterGenerator rasterGenerator;
 	
 	/*
-	 * Entry point for accepting s3 location of the raster resource and bounding box 
+	 * Entry point for raw post accepting s3 location of the raster resource and bounding box 
 	 * to parse and return the location of the newly created s3 resource with the given bounding box.
 	 *  
-	 * @param body
+	 * @param RasterCropRequest
 	 *            The Json Payload
-	 * @return Response object.
+	 * @return DataResource object.
 	 */
 	@RequestMapping(value = "/crop", method = RequestMethod.POST)
-	public DataResource processRasterResouce222(@RequestBody RasterCropRequest request) {
+	public DataResource processRasterResouceRawPost(@RequestBody RasterCropRequest request) {
 		DataResource dataResource = new DataResource();
 			try {
 				dataResource = rasterGenerator.cropRasterCoverage(request);
@@ -66,12 +66,12 @@ public class ServiceEntrypoint {
 	}
 	
 	/*
-	 * Entry point for accepting s3 location of the raster resource and bounding box 
+	 * Entry point for form-data post accepting s3 location of the raster resource and bounding box 
 	 * to parse and return the location of the newly created s3 resource with the given bounding box.
 	 *  
 	 * @param body
 	 *            The Json Payload
-	 * @return Response object.
+	 * @return DataResource object.
 	 */
 	@RequestMapping(value = "/cropFormData", method = RequestMethod.POST)
 	public DataResource processRasterResouce(@RequestParam(required = true) String body) {

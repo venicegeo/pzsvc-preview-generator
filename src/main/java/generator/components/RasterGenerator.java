@@ -70,11 +70,8 @@ public class RasterGenerator {
 	private String RASTER_LOCAL_DIRECTORY;
 
 	private AmazonS3 s3Client;
-	
-	public String cropGeoTiff() {
-		
-		return "true";
-	}
+
+	private static final String S3_OUTPUT_BUCKET = "pz-svcs-prevgen-output";
 	
 	/**
 	 * Create a cropped coverage.
@@ -117,7 +114,7 @@ public class RasterGenerator {
 		// Writing Cropped Image to File
 		String newFilePath = new StringBuilder(localWriteDir.getAbsolutePath()).append(File.separator).append(cropped.getName().toString()).append(".tif").toString();
 		final File s3File = new File(newFilePath);
-		final GridCoverageWriter writer = format.getWriter(s3File);
+		GridCoverageWriter writer = format.getWriter(s3File);
 		try {
 			writer.write(cropped, null);
 		} catch (IOException e) {
@@ -140,6 +137,9 @@ public class RasterGenerator {
 		} catch (Throwable e) {
 
 		}
+//		writer = null;
+//		cropped = null;
+//		gridCoverage = null;
 
 		// Delete local raster
 		//System.gc(); //Java Garbage Collector
@@ -188,17 +188,13 @@ public class RasterGenerator {
 	private String writeFileToS3(File file, FileLocation fileLocation) throws FileNotFoundException{
 		ObjectMetadata metadata = new ObjectMetadata();
 		metadata.setContentLength(file.length());
-		
-		String uniqueId = uuidFactory.getUUID();
-		String fileKey = String.format("%s-%s-%s", "croppedRaster", uniqueId, file.getName());
+
+		String fileKey = String.format("%s-%s", uuidFactory.getUUID(), file.getName());
 		
 		BasicAWSCredentials credentials = new BasicAWSCredentials(AMAZONS3_ACCESS_KEY, AMAZONS3_PRIVATE_KEY);
 		s3Client = new AmazonS3Client(credentials);
 		InputStream inputStream = new FileInputStream(file);
-		
-		S3FileStore s3Store = (S3FileStore)fileLocation;
-		
-		s3Client.putObject(s3Store.getBucketName(), fileKey, inputStream, metadata);
+		s3Client.putObject(S3_OUTPUT_BUCKET, fileKey, inputStream, metadata);
 		
 		return fileKey;
 	}
