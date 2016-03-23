@@ -1,0 +1,9 @@
+applications:
+- name: pz-svcs-prevgen
+  host: pz-svcs-prevgen
+  path: pz-svcs-prevgen.jar
+  buildpack: java_buildpack_offline
+  domain: stage.geointservices.io
+  memory: 512M
+  instances: 1
+  timeout: 80
