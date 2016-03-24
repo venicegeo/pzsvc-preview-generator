@@ -8,7 +8,7 @@
 	<version>0.0.1-SNAPSHOT</version>
 	<packaging>jar</packaging>
 
-	<name>pzsvc-previewgenerator</name>
+	<name>pzsvc-preview-generator</name>
 	<description>Project providing external service for generating raster with given bounding box</description>
 
 	<parent>
@@ -23,10 +23,12 @@
 			<id>spring-releases</id>
 			<url>https://repo.spring.io/libs-release</url>
 		</repository>
-		<repository>
-			<id>s3.snapshot</id>
-			<url>s3://venice-maven-private/snapshot</url>
-		</repository>
+
+	    <repository>
+	        <id>nexus</id>
+	        <url>https://nexus.devops.geointservices.io/content/repositories/Piazza/</url>
+	    </repository>
+
 		<repository>
 			<id>osgeo</id>
 			<name>Open Source Geospatial Foundation Repository</name>
@@ -91,9 +93,15 @@
 		</dependency>
 
 		<dependency>
-			<groupId>org.venice.piazza</groupId>
+			<groupId>io.piazzageo</groupId>
 			<artifactId>pz-jobcommon</artifactId>
-			<version>1.0.0.BUILD-SNAPSHOT</version>
+			<version>LATEST</version>
+		</dependency>
+
+   		<dependency>
+			<groupId>com.amazonaws</groupId>
+			<artifactId>aws-java-sdk-s3</artifactId>
+			<version>1.10.43</version>
 		</dependency>
 
 	</dependencies>
@@ -106,6 +114,4 @@
 			</plugin>
 		</plugins>
 	</build>
-
-
 </project>
