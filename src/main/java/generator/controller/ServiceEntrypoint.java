@@ -86,5 +86,16 @@ public class ServiceEntrypoint {
 		}
 		
 		return dataResource;
-	}	
+	}
+	
+	/**
+	 * 
+	 * Info endpoint for the service to see if it is running.
+	 * @return String true
+	 */
+	@RequestMapping(value = "/info", method = RequestMethod.GET)
+	public String getInfo() {
+		return "true";
+	}
+
 }
