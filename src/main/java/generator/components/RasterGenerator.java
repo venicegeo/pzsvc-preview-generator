@@ -188,8 +188,8 @@ public class RasterGenerator {
 
 		String fileKey = String.format("%s-%s", uuidFactory.getUUID(), file.getName());
 		
-		BasicAWSCredentials credentials = new BasicAWSCredentials(AMAZONS3_ACCESS_KEY, AMAZONS3_PRIVATE_KEY);
-		s3Client = new AmazonS3Client(credentials);
+		//BasicAWSCredentials credentials = new BasicAWSCredentials(AMAZONS3_ACCESS_KEY, AMAZONS3_PRIVATE_KEY);
+		s3Client = new AmazonS3Client();
 		InputStream inputStream = new FileInputStream(file);
 		s3Client.putObject(S3_OUTPUT_BUCKET, fileKey, inputStream, metadata);
 		
