@@ -1,0 +1,14 @@
+{
+	"source": {
+		"domain": "s3.amazonaws.com",
+		"bucketName": "pz-svcs-prevgen",
+		"fileName": "NASA-GDEM-10km-colorized.tif"
+	},
+	"function": "crop",
+	"bounds": {
+		"minx": -140.00,
+		"miny": 10.00,
+		"maxx": -60.00,
+		"maxy": 70.00
+	}
+}
