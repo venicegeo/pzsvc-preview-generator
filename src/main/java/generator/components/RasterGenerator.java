@@ -158,7 +158,7 @@ public class RasterGenerator {
 		//create data type to return
 		S3FileStore s3Store = new S3FileStore();
 		s3Store.domainName = request.getSource().getDomain();
-		s3Store.bucketName = request.getSource().getBucketName();
+		s3Store.bucketName = S3_OUTPUT_BUCKET;
 		s3Store.fileName = id;
 		
 		RasterDataType dataType = new RasterDataType();
@@ -196,9 +196,7 @@ public class RasterGenerator {
 		// Making the object Public
 		PutObjectRequest putObj = new PutObjectRequest(S3_OUTPUT_BUCKET, fileKey, file);
 		putObj.setCannedAcl(CannedAccessControlList.PublicRead);
-		
-		//InputStream inputStream = new FileInputStream(file);
-		//s3Client.putObject(S3_OUTPUT_BUCKET, fileKey, inputStream, metadata);
+
 		s3Client.putObject(putObj);
 
 		return fileKey;
