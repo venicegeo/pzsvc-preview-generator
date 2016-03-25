@@ -35,7 +35,9 @@ import org.springframework.stereotype.Component;
 import com.amazonaws.auth.BasicAWSCredentials;
 import com.amazonaws.services.s3.AmazonS3;
 import com.amazonaws.services.s3.AmazonS3Client;
+import com.amazonaws.services.s3.model.CannedAccessControlList;
 import com.amazonaws.services.s3.model.ObjectMetadata;
+import com.amazonaws.services.s3.model.PutObjectRequest;
 
 import generator.model.RasterCropRequest;
 import model.data.DataResource;
@@ -190,9 +192,15 @@ public class RasterGenerator {
 		
 		//BasicAWSCredentials credentials = new BasicAWSCredentials(AMAZONS3_ACCESS_KEY, AMAZONS3_PRIVATE_KEY);
 		s3Client = new AmazonS3Client();
-		InputStream inputStream = new FileInputStream(file);
-		s3Client.putObject(S3_OUTPUT_BUCKET, fileKey, inputStream, metadata);
 		
+		// Making the object Public
+		PutObjectRequest putObj = new PutObjectRequest(S3_OUTPUT_BUCKET, fileKey, file);
+		putObj.setCannedAcl(CannedAccessControlList.PublicRead);
+		
+		//InputStream inputStream = new FileInputStream(file);
+		//s3Client.putObject(S3_OUTPUT_BUCKET, fileKey, inputStream, metadata);
+		s3Client.putObject(putObj);
+
 		return fileKey;
 	}
 	
