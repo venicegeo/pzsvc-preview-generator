@@ -31,11 +31,14 @@ import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 import org.springframework.web.client.RestTemplate;
 
+import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 
 import generator.components.RasterGenerator;
 import generator.model.RasterCropRequest;
 import model.data.DataResource;
+import model.data.type.RasterDataType;
+import model.data.type.TextDataType;
 
 /**
  * Handles raster resource payload requests, and processes them from s3.
@@ -62,16 +65,29 @@ public class ServiceEntrypoint {
 	 *            The Json Payload
 	 * @return DataResource object.
 	 */
-	@RequestMapping(value = "/crop", method = RequestMethod.POST, produces=MediaType.APPLICATION_JSON_VALUE)
-	public DataResource processRasterResouceRawPost(@RequestBody RasterCropRequest request) {
-		DataResource dataResource = new DataResource();
-			try {
+	@RequestMapping(value = "/crop", method = RequestMethod.POST, produces={"application/json; charset=UTF-8"})
+	public String processRasterResouceRawPost(@RequestBody RasterCropRequest request) {
+		DataResource dataResource=null;
+		try {
 				dataResource = rasterGenerator.cropRasterCoverage(request);
+	
 			} catch (Exception e) {
 				// TODO Auto-generated catch block
 				e.printStackTrace();
 			}
-		return dataResource;
+		ObjectMapper mapper = new ObjectMapper();
+		String responseString = "";
+		try {
+			 if (dataResource != null) {
+			    responseString = mapper.writeValueAsString(dataResource);
+			 }
+			 else
+				 responseString = "";
+		}
+		catch (JsonProcessingException ex) {
+			
+		}
+		return responseString;
 	}
 	
 	/*
@@ -88,7 +104,7 @@ public class ServiceEntrypoint {
 		try {
 			// Parse the Request String
 			RasterCropRequest request = new ObjectMapper().readValue(body, RasterCropRequest.class);
-			dataResource = rasterGenerator.cropRasterCoverage(request);
+			//dataResource = rasterGenerator.cropRasterCoverage(request);
 		} catch (Exception e) {
 			// TODO Auto-generated catch block
 			e.printStackTrace();
@@ -124,7 +140,7 @@ public class ServiceEntrypoint {
 		RestTemplate restTemplate = new RestTemplate();
 		ResponseEntity<DataResource> response = restTemplate.exchange("http://localhost:8086/crop", HttpMethod.POST, request, DataResource.class);
 		
-		System.out.println(" WORKS ----------------------------------- " + response.getBody().getDataType().getType() );
+		//System.out.println(" WORKS ----------------------------------- " + response.getBody().getDataType().getType() );
 		
 		return "true";
 	}
