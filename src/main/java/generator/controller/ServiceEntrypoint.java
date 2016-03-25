@@ -62,7 +62,7 @@ public class ServiceEntrypoint {
 	 *            The Json Payload
 	 * @return DataResource object.
 	 */
-	@RequestMapping(value = "/crop", method = RequestMethod.POST)
+	@RequestMapping(value = "/crop", method = RequestMethod.POST, produces=MediaType.APPLICATION_JSON_VALUE)
 	public DataResource processRasterResouceRawPost(@RequestBody RasterCropRequest request) {
 		DataResource dataResource = new DataResource();
 			try {
