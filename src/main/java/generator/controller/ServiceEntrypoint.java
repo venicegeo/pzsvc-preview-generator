@@ -118,31 +118,9 @@ public class ServiceEntrypoint {
 	 * Info endpoint for the service to see if it is running.
 	 * @return String true
 	 */
-	@RequestMapping(value = "/test", method = RequestMethod.GET)
+	@RequestMapping(value = "/info", method = RequestMethod.GET)
 	public String getInfo() {
-		
-		ClassLoader classLoader = getClass().getClassLoader();
-		String payload="";
-		try {
-			payload = IOUtils.toString(classLoader.getResourceAsStream("templates/payload.json"));
-		} catch (IOException e) {
-			// TODO Auto-generated catch block
-			e.printStackTrace();
-		}
-		
-		HttpHeaders headers = new HttpHeaders();
-		//headers.add("Authorization", "Basic " + credentials);
-		headers.setContentType(MediaType.APPLICATION_JSON);
-
-		// Create the Request template and execute
-		HttpEntity<String> request = new HttpEntity<String>(payload, headers);
-
-		RestTemplate restTemplate = new RestTemplate();
-		ResponseEntity<DataResource> response = restTemplate.exchange("http://localhost:8086/crop", HttpMethod.POST, request, DataResource.class);
-		
-		//System.out.println(" WORKS ----------------------------------- " + response.getBody().getDataType().getType() );
-		
-		return "true";
+		return "pz-svcs-prevgen is alive!\n See \"https://github.com/venicegeo/pzsvc-preview-generator/wiki/pzsvc-preview-generator-external-service\" for usage.";
 	}
 
 }
