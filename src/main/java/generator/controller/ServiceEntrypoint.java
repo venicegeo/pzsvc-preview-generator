@@ -35,6 +35,7 @@ import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 
 import generator.components.RasterGenerator;
+import generator.model.ErrorResponse;
 import generator.model.RasterCropRequest;
 import model.data.DataResource;
 import model.data.type.RasterDataType;
@@ -68,21 +69,22 @@ public class ServiceEntrypoint {
 	@RequestMapping(value = "/crop", method = RequestMethod.POST, produces={"application/json; charset=UTF-8"})
 	public String processRasterResouceRawPost(@RequestBody RasterCropRequest request) {
 		DataResource dataResource=null;
+		String responseString = "";
+		ObjectMapper mapper = new ObjectMapper();
+		String errorString= "";
 		try {
 				dataResource = rasterGenerator.cropRasterCoverage(request);
-	
 			} catch (Exception e) {
 				// TODO Auto-generated catch block
 				e.printStackTrace();
+				errorString = e.getMessage();
 			}
-		ObjectMapper mapper = new ObjectMapper();
-		String responseString = "";
+		
 		try {
-			 if (dataResource != null) {
-			    responseString = mapper.writeValueAsString(dataResource);
-			 }
-			 else
-				 responseString = "";
+			responseString = mapper.writeValueAsString(dataResource);
+			if (dataResource == null) {
+				responseString = mapper.writeValueAsString(new ErrorResponse(errorString));
+			}
 		}
 		catch (JsonProcessingException ex) {
 			
