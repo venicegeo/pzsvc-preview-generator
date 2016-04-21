@@ -15,31 +15,17 @@
  **/
 package generator.controller;
 
-import java.io.IOException;
-
-import org.apache.commons.io.IOUtils;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.http.HttpEntity;
-import org.springframework.http.HttpHeaders;
-import org.springframework.http.HttpMethod;
-import org.springframework.http.MediaType;
+import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestMethod;
-import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
-import org.springframework.web.client.RestTemplate;
-
-import com.fasterxml.jackson.core.JsonProcessingException;
-import com.fasterxml.jackson.databind.ObjectMapper;
-
 import generator.components.RasterGenerator;
 import generator.model.ErrorResponse;
 import generator.model.RasterCropRequest;
 import model.data.DataResource;
-import model.data.type.RasterDataType;
-import model.data.type.TextDataType;
 
 /**
  * Handles raster resource payload requests, and processes them from s3.
@@ -64,57 +50,25 @@ public class ServiceEntrypoint {
 	 *  
 	 * @param RasterCropRequest
 	 *            The Json Payload
-	 * @return DataResource object.
+	 * @return DataResource object or an error.
 	 */
 	@RequestMapping(value = "/crop", method = RequestMethod.POST, produces={"application/json; charset=UTF-8"})
-	public String processRasterResouceRawPost(@RequestBody RasterCropRequest request) {
+	public ResponseEntity<?> processRasterResouceRawPost2(@RequestBody RasterCropRequest request) {
 		DataResource dataResource=null;
-		String responseString = "";
-		ObjectMapper mapper = new ObjectMapper();
-		String errorString= "";
 		try {
 				dataResource = rasterGenerator.cropRasterCoverage(request);
 			} catch (Exception e) {
-				// TODO Auto-generated catch block
 				e.printStackTrace();
-				errorString = e.getMessage();
+				return new ResponseEntity<ErrorResponse>(new ErrorResponse(e.getMessage()), HttpStatus.INTERNAL_SERVER_ERROR);
 			}
 		
-		try {
-			responseString = mapper.writeValueAsString(dataResource);
-			if (dataResource == null) {
-				responseString = mapper.writeValueAsString(new ErrorResponse(errorString));
-			}
+		if (dataResource == null) {
+			return new ResponseEntity<ErrorResponse>(new ErrorResponse("Unknown error, data resource is empty."), HttpStatus.INTERNAL_SERVER_ERROR);
 		}
-		catch (JsonProcessingException ex) {
-			
-		}
-		return responseString;
+
+		return new ResponseEntity<DataResource>(dataResource, HttpStatus.OK);
 	}
-	
-	/*
-	 * Entry point for form-data post accepting s3 location of the raster resource and bounding box 
-	 * to parse and return the location of the newly created s3 resource with the given bounding box.
-	 *  
-	 * @param body
-	 *            The Json Payload
-	 * @return DataResource object.
-	 */
-	@RequestMapping(value = "/cropFormData", method = RequestMethod.POST)
-	public DataResource processRasterResouce(@RequestParam(required = true) String body) {
-		DataResource dataResource = new DataResource();
-		try {
-			// Parse the Request String
-			RasterCropRequest request = new ObjectMapper().readValue(body, RasterCropRequest.class);
-			//dataResource = rasterGenerator.cropRasterCoverage(request);
-		} catch (Exception e) {
-			// TODO Auto-generated catch block
-			e.printStackTrace();
-		}
-		
-		return dataResource;
-	}
-	
+
 	/**
 	 * 
 	 * Info endpoint for the service to see if it is running.
