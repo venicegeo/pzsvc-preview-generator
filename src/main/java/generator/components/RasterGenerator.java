@@ -21,6 +21,8 @@ import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.io.InputStream;
 
+import javax.media.jai.PlanarImage;
+
 import org.apache.commons.io.FileUtils;
 import org.geotools.coverage.grid.GridCoverage2D;
 import org.geotools.coverage.processing.CoverageProcessor;
@@ -49,6 +51,7 @@ import model.job.metadata.ResourceMetadata;
 import util.UUIDFactory;
 
 import org.geotools.geometry.GeneralEnvelope;
+import org.geotools.resources.image.ImageUtilities;
 
 /**
  * 
@@ -87,18 +90,19 @@ public class RasterGenerator {
 		// Read Original File to From S3
 		FileLocation fileLocation = new S3FileStore(request.getSource().getBucketName(), request.getSource().getFileName(), request.getSource().getDomain());
 		File tiff = getFileFromS3(fileLocation);
+		
 
 		// Create Temporary Local Write Directory
 		File localWriteDir = new File(String.format("%s%s%s", RASTER_LOCAL_DIRECTORY, File.separator, "writeDir"));
 		localWriteDir.mkdir();
 
 		// Create Format and Reader
-		final GeoTiffFormat format = new GeoTiffFormat();
+		GeoTiffFormat format = new GeoTiffFormat();
 		GridCoverageReader reader = format.getReader(tiff);
 
 		// Read Original Coverage.
 		GridCoverage2D gridCoverage = (GridCoverage2D) reader.read(null);
-		
+
 		// Set the Crop Envelope
 		double xmin = request.getBounds().getMinx();
 		double ymin = request.getBounds().getMiny();
@@ -131,8 +135,24 @@ public class RasterGenerator {
 		String fileName = writeFileToS3(s3File, fileLocation);
 
 		// Close Things
+	    if (gridCoverage != null) {
+	        try {
+	            // THIS IS ESSENTIAL FOR RELEASING LOCKS ON IMAGE FILES!
+	            PlanarImage planarImage = (PlanarImage) gridCoverage.getRenderedImage();
+	            ImageUtilities.disposePlanarImageChain(planarImage);
+
+	            // TODO: necessary?
+	            //planarImage.dispose();
+	            //planarImage.removeSinks();
+
+	            gridCoverage.dispose(false);
+	        } catch (Throwable t) {
+	            // ignored
+	        }
+	    }
+
 		cropped.dispose(true);
-		gridCoverage.dispose(true);
+		//gridCoverage.dispose(true);
 		try {
 			if (reader != null)
 				reader.dispose();
@@ -141,8 +161,8 @@ public class RasterGenerator {
 		}
 
 		// Delete local raster
-		//System.gc(); //Java Garbage Collector
 		tiff.delete();
+		s3File.delete();
 
 		return getDataSource(fileName, request);
 	}
