@@ -58,8 +58,8 @@ public class ServiceEntrypoint {
 		try {
 				dataResource = rasterGenerator.cropRasterCoverage(request);
 				
-				// sleeping for 30 seconds to imitate long running test for integration tests to 
-				Thread.sleep(60000);
+				// sleeping for 30 seconds to assist integration tests for full coverage of external services 
+				Thread.sleep(30000);
 
 			} catch (Exception e) {
 				e.printStackTrace();
