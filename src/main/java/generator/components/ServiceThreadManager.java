@@ -19,8 +19,6 @@ public class ServiceThreadManager {
 	private UUIDFactory uuidFactory;
 	@Autowired
 	private RasterGenerator rasterGenerator;
-	//@Autowired
-	//private MongoAccessor mongoAccessor;
 
 	private Map<String, Future<?>> threadMap;
 
@@ -29,20 +27,22 @@ public class ServiceThreadManager {
 	 */
 	@PostConstruct
 	public void initialize() {
-
 		// Initialize the HashMap
 		threadMap = new HashMap<String, Future<?>>();
 	}
 
 	/**
 	 * Asynchronously processing raster image
+	 * @throws Exception 
 	 */
-	public String processRasterAsync(RasterCropRequest request) {
+	public String processRasterAsync(RasterCropRequest payload) throws Exception {
 		String id = uuidFactory.getUUID();
-		Future<?> thread = rasterGenerator.run(id);
+		Future<?> thread = rasterGenerator.run(payload, id);
+		
 
+		// Keep track of running jobs
 		threadMap.put(id, thread);
-		//mongoAccessor.addprocess();
+		
 		return id;
 	}
 

@@ -1,5 +1,11 @@
 package generator.model;
 
+/**
+ * S3 store model for representing service payload.
+ * 
+ * @author Sonny.Saniev
+ * 
+ */
 public class S3StoreInfo {
 	public String domain;
 	public String bucketName;

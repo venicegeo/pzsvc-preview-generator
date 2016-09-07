@@ -43,12 +43,14 @@ import com.amazonaws.services.s3.model.ObjectMetadata;
 import com.amazonaws.services.s3.model.PutObjectRequest;
 
 import generator.model.RasterCropRequest;
+import generator.model.ServiceResource;
 import model.data.DataResource;
 import model.data.location.FileAccessFactory;
 import model.data.location.FileLocation;
 import model.data.location.S3FileStore;
 import model.data.type.RasterDataType;
 import model.job.metadata.ResourceMetadata;
+import model.status.StatusUpdate;
 import util.UUIDFactory;
 
 import org.geotools.geometry.GeneralEnvelope;
@@ -67,7 +69,9 @@ public class RasterGenerator {
 
 	@Autowired
 	private UUIDFactory uuidFactory;
-
+	@Autowired
+	private MongoAccessor mongoAccessor;
+	
 	@Value("${s3.key.access:}")
 	private String AMAZONS3_ACCESS_KEY;
 	@Value("${s3.key.private:}")
@@ -83,10 +87,24 @@ public class RasterGenerator {
 	 * Asynchronous handler for cropping the image demonstrating service monitor capabilities of piazza.
 	 * 
 	 * @return Future
+	 * @throws Exception 
 	 */
 	@Async
-	public Future<String> run(String id) {
-		return new AsyncResult<String>(id);
+	public Future<String> run(RasterCropRequest payload, String id) throws Exception {
+System.out.println("------------------------------------STARTED THREAD: " + id);
+		DataResource dataResource = cropRasterCoverage(payload);
+System.out.println("------------------------------------FINISHED THREAD: " + id);
+
+		ServiceResource serviceResource = new ServiceResource();
+		serviceResource.setServiceResourceId(id);
+		serviceResource.setPercentComplete(Integer.valueOf((Math.random()*100)+"")); // modify this later to return accurat numbers
+		serviceResource.setStatus(new StatusUpdate(StatusUpdate.STATUS_SUCCESS));
+		serviceResource.setResult(dataResource);
+		
+		// persist ServiceResource
+		mongoAccessor.addServiceResource(serviceResource);
+
+		return new AsyncResult<String>("crop raster thread");
 	}
 	
 	/**
@@ -96,10 +114,10 @@ public class RasterGenerator {
 	 * 
 	 * @throws Exception 
 	 */
-	public DataResource cropRasterCoverage(RasterCropRequest request) throws Exception {
+	public DataResource cropRasterCoverage(RasterCropRequest payload) throws Exception {
 
 		// Read Original File to From S3
-		FileLocation fileLocation = new S3FileStore(request.getSource().getBucketName(), request.getSource().getFileName(), request.getSource().getDomain());
+		FileLocation fileLocation = new S3FileStore(payload.getSource().getBucketName(), payload.getSource().getFileName(), payload.getSource().getDomain());
 		File tiff = getFileFromS3(fileLocation);
 
 		// Create Temporary Local Write Directory
@@ -114,10 +132,10 @@ public class RasterGenerator {
 		GridCoverage2D gridCoverage = (GridCoverage2D) reader.read(null);
 
 		// Set the Crop Envelope
-		double xmin = request.getBounds().getMinx();
-		double ymin = request.getBounds().getMiny();
-		double xmax = request.getBounds().getMaxx();
-		double ymax = request.getBounds().getMaxy();
+		double xmin = payload.getBounds().getMinx();
+		double ymin = payload.getBounds().getMiny();
+		double xmax = payload.getBounds().getMaxx();
+		double ymax = payload.getBounds().getMaxy();
 		final GeneralEnvelope cropEnvelope = new GeneralEnvelope(new double[] { xmin, ymin}, new double[] { xmax, ymax});
 
 		// Crop the Raster
@@ -147,7 +165,7 @@ public class RasterGenerator {
 		// Close Things
 	    if (gridCoverage != null) {
 	        try {
-	            // THIS IS ESSENTIAL FOR RELEASING LOCKS ON IMAGE FILES!
+	            // This is essential for releasing locks on image files!
 	            PlanarImage planarImage = (PlanarImage) gridCoverage.getRenderedImage();
 	            ImageUtilities.disposePlanarImageChain(planarImage);
 	            // TODO:
@@ -172,7 +190,7 @@ public class RasterGenerator {
 		tiff.delete();
 		s3File.delete();
 
-		return getDataSource(fileName, request);
+		return getDataSource(fileName, payload);
 	}
 	
 	/**
@@ -213,6 +231,7 @@ public class RasterGenerator {
 	 * @param file the object
 	 */
 	private String writeFileToS3(File file, FileLocation fileLocation) throws FileNotFoundException{
+
 		ObjectMetadata metadata = new ObjectMetadata();
 		metadata.setContentLength(file.length());
 		String fileKey = String.format("%s-%s", uuidFactory.getUUID(), file.getName());
@@ -238,11 +257,10 @@ public class RasterGenerator {
 	 * @throws IOException
 	 */
 	private File getFileFromS3(FileLocation fileLocation) throws IOException, Exception {
-		
-		// Get file stream from AWS S3
+
+		// Obtain file stream from AWS S3
 		FileAccessFactory fileFactory = new FileAccessFactory(AMAZONS3_ACCESS_KEY, AMAZONS3_PRIVATE_KEY);
 		File file = new File(String.format("%s%s%s", RASTER_LOCAL_DIRECTORY, File.separator, fileLocation.getFileName()));
-		//file.createNewFile();
 
 		InputStream inputStream = fileFactory.getFile(fileLocation);
 		FileUtils.copyInputStreamToFile(inputStream, file);

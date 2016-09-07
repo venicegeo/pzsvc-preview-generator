@@ -92,8 +92,7 @@ public class ServiceEntrypoint {
 	@RequestMapping(value = "/cropasync", method = RequestMethod.POST, produces={"application/json; charset=UTF-8"})
 	public ResponseEntity<?> processRasterAsync(@RequestBody RasterCropRequest request) {
 		try {
-			String id = serviceThreadManager.processRasterAsync(request);
-			JobResponse job = new JobResponse(id);
+			JobResponse job = new JobResponse(serviceThreadManager.processRasterAsync(request));
 			return new ResponseEntity<JobResponse>(job, HttpStatus.OK);
 		} catch (Exception e) {
 			e.printStackTrace();
