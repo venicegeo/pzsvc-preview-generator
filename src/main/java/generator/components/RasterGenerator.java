@@ -16,10 +16,10 @@
 package generator.components;
 
 import java.io.File;
-import java.io.FileInputStream;
 import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.io.InputStream;
+import java.util.concurrent.Future;
 
 import javax.media.jai.PlanarImage;
 
@@ -32,9 +32,10 @@ import org.opengis.coverage.grid.GridCoverageWriter;
 import org.opengis.parameter.ParameterValueGroup;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.scheduling.annotation.Async;
+import org.springframework.scheduling.annotation.AsyncResult;
 import org.springframework.stereotype.Component;
 
-import com.amazonaws.auth.BasicAWSCredentials;
 import com.amazonaws.services.s3.AmazonS3;
 import com.amazonaws.services.s3.AmazonS3Client;
 import com.amazonaws.services.s3.model.CannedAccessControlList;
@@ -77,6 +78,16 @@ public class RasterGenerator {
 	private AmazonS3 s3Client;
 
 	private static final String S3_OUTPUT_BUCKET = "pz-svcs-prevgen-output";
+
+	/**
+	 * Asynchronous handler for cropping the image demonstrating service monitor capabilities of piazza.
+	 * 
+	 * @return Future
+	 */
+	@Async
+	public Future<String> run(String id) {
+		return new AsyncResult<String>(id);
+	}
 	
 	/**
 	 * Create a cropped coverage.
@@ -90,7 +101,6 @@ public class RasterGenerator {
 		// Read Original File to From S3
 		FileLocation fileLocation = new S3FileStore(request.getSource().getBucketName(), request.getSource().getFileName(), request.getSource().getDomain());
 		File tiff = getFileFromS3(fileLocation);
-		
 
 		// Create Temporary Local Write Directory
 		File localWriteDir = new File(String.format("%s%s%s", RASTER_LOCAL_DIRECTORY, File.separator, "writeDir"));
@@ -140,11 +150,9 @@ public class RasterGenerator {
 	            // THIS IS ESSENTIAL FOR RELEASING LOCKS ON IMAGE FILES!
 	            PlanarImage planarImage = (PlanarImage) gridCoverage.getRenderedImage();
 	            ImageUtilities.disposePlanarImageChain(planarImage);
-
-	            // TODO: necessary?
+	            // TODO:
 	            //planarImage.dispose();
 	            //planarImage.removeSinks();
-
 	            gridCoverage.dispose(false);
 	        } catch (Throwable t) {
 	            // ignored
@@ -200,23 +208,21 @@ public class RasterGenerator {
 	}
 	
 	/**
-	 * Upload file to an s3 bucket
+	 * Upload file to s3 bucket
 	 * 
 	 * @param file the object
 	 */
 	private String writeFileToS3(File file, FileLocation fileLocation) throws FileNotFoundException{
 		ObjectMetadata metadata = new ObjectMetadata();
 		metadata.setContentLength(file.length());
-
 		String fileKey = String.format("%s-%s", uuidFactory.getUUID(), file.getName());
 		
 		//BasicAWSCredentials credentials = new BasicAWSCredentials(AMAZONS3_ACCESS_KEY, AMAZONS3_PRIVATE_KEY);
 		s3Client = new AmazonS3Client();
 		
-		// Making the object Public
+		// Making the object public
 		PutObjectRequest putObj = new PutObjectRequest(S3_OUTPUT_BUCKET, fileKey, file);
 		putObj.setCannedAcl(CannedAccessControlList.PublicRead);
-
 		s3Client.putObject(putObj);
 
 		return fileKey;
