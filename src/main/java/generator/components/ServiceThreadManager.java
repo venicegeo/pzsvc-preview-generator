@@ -21,8 +21,10 @@ public class ServiceThreadManager {
 
 	@Autowired
 	private UUIDFactory uuidFactory;
+	
 	@Autowired
 	private MongoAccessor mongoAccessor;
+	
 	@Autowired
 	private RasterGenerator rasterGenerator;
 
@@ -43,10 +45,9 @@ public class ServiceThreadManager {
 	 */
 	public String processRasterAsync(RasterCropRequest payload) throws Exception {
 		String id = uuidFactory.getUUID();
-		Future<?> thread = rasterGenerator.run(payload, id);
 		
-		// Keep track of running jobs
-		threadMap.put(id, thread);
+		// No need to keep track of threads for now
+		rasterGenerator.run(payload, id);
 		
 		return id;
 	}

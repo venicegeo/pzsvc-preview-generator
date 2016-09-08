@@ -92,9 +92,9 @@ public class RasterGenerator {
 	 */
 	@Async
 	public Future<String> run(RasterCropRequest payload, String id) throws Exception {
-		
+System.out.println("aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa started thread " + id);
 		// Crop raster
-		DataResource dataResource = cropRasterCoverage(payload);
+		DataResource dataResource = cropRasterCoverage(payload, id);
 
 		// Create storage model
 		ServiceResource serviceResource = new ServiceResource();
@@ -107,7 +107,7 @@ public class RasterGenerator {
 		
 		// persist ServiceResource
 		mongoAccessor.addServiceResource(serviceResource);
-
+System.out.println("bbbbbbbbbbbbbbbbbbbbbbbbbbbbbb finished thread " + id);
 		return new AsyncResult<String>("crop raster thread");
 	}
 	
@@ -118,15 +118,16 @@ public class RasterGenerator {
 	 * 
 	 * @throws Exception 
 	 */
-	public DataResource cropRasterCoverage(RasterCropRequest payload) throws Exception {
+	public DataResource cropRasterCoverage(RasterCropRequest payload, String serviceId) throws Exception {
 
 		// Read Original File to From S3
 		Long fileSize = Long.valueOf(0);
 		FileLocation fileLocation = new S3FileStore(payload.getSource().getBucketName(), payload.getSource().getFileName(), fileSize, payload.getSource().getDomain());
-		File tiff = getFileFromS3(fileLocation);
+		File tiff = getFileFromS3(fileLocation, serviceId);
 
 		// Create Temporary Local Write Directory
-		File localWriteDir = new File(String.format("%s%s%s", RASTER_LOCAL_DIRECTORY, File.separator, "writeDir"));
+		String tempTopFolder = String.format("%s_%s", RASTER_LOCAL_DIRECTORY, serviceId);
+		File localWriteDir = new File(String.format("%s%s%s", tempTopFolder, File.separator, "writeDir"));
 		localWriteDir.mkdir();
 
 		// Create Format and Reader
@@ -191,9 +192,8 @@ public class RasterGenerator {
 
 		}
 
-		// Delete local raster
-		tiff.delete();
-		s3File.delete();
+		// Delete local temp folder recursively
+		deleteDirectoryRecursive(new File(tempTopFolder));
 
 		return getDataSource(fileName, payload);
 	}
@@ -219,9 +219,6 @@ public class RasterGenerator {
 		ResourceMetadata resourceMetadata = new ResourceMetadata();
 		resourceMetadata.name = "External Crop Raster Service";
 		resourceMetadata.description = "Service that takes payload containing S3 location and bounding box for some raster file, downloads, crops and uploads the crop back up to s3.";
-//		resourceMetadata.url = "http://host:8086/crop";
-//		resourceMetadata.method = "POST";
-//		resourceMetadata.id = id;
 
 		DataResource dataSource = new DataResource();
 		dataSource.dataType=dataType;
@@ -261,16 +258,46 @@ public class RasterGenerator {
 	 * @throws Exception
 	 * @throws IOException
 	 */
-	private File getFileFromS3(FileLocation fileLocation) throws IOException, Exception {
+	private File getFileFromS3(FileLocation fileLocation, String serviceId) throws IOException, Exception {
 
 		// Obtain file stream from AWS S3
 		FileAccessFactory fileFactory = new FileAccessFactory(AMAZONS3_ACCESS_KEY, AMAZONS3_PRIVATE_KEY);
-		File file = new File(String.format("%s%s%s", RASTER_LOCAL_DIRECTORY, File.separator, fileLocation.getFileName()));
+		File file = new File(String.format("%s_%s%s%s", RASTER_LOCAL_DIRECTORY, serviceId, File.separator, fileLocation.getFileName()));
 
 		InputStream inputStream = fileFactory.getFile(fileLocation);
 		FileUtils.copyInputStreamToFile(inputStream, file);
 		inputStream.close();
 
 		return file;
+	}
+	
+	/**
+	 * Recursive deletion of directory
+	 * 
+	 * @param File
+	 *            Directory to be deleted
+	 * 
+	 * @return boolean if successful
+	 * @throws Exception
+	 */
+	private boolean deleteDirectoryRecursive(File directory) throws Exception {
+		boolean result = false;
+
+		if (directory.isDirectory()) {
+			File[] files = directory.listFiles();
+
+			for (int i = 0; i < files.length; i++) {
+				if (files[i].isDirectory()) {
+					deleteDirectoryRecursive(files[i]);
+				}
+
+				if (!files[i].delete() && files[i].exists())
+					throw new Exception("Unable to delete file " + files[i].getName() + " from " + directory.getAbsolutePath());
+			}
+
+			result = directory.delete();
+		}
+
+		return result;
 	}
 }

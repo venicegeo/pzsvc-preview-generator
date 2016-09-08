@@ -249,7 +249,7 @@ public class MongoAccessor {
 	/**
 	 * Deletes a Job entry.
 	 * 
-	 * @param jobId
+	 * @param serviceId
 	 *            The Id of the job to delete
 	 */
 	public void removeJob(String serviceId) {

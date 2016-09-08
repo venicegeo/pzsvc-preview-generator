@@ -63,7 +63,7 @@ public class ServiceEntrypoint {
 	public ResponseEntity<?> processRasterResouceRawPost2(@RequestBody RasterCropRequest request) {
 		DataResource dataResource=null;
 		try {
-				dataResource = rasterGenerator.cropRasterCoverage(request);
+				dataResource = rasterGenerator.cropRasterCoverage(request, "123456");
 				
 				// sleeping for 30 seconds to assist integration tests for full coverage of external services 
 				Thread.sleep(15000);

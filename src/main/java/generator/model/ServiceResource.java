@@ -1,5 +1,9 @@
 package generator.model;
 
+import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
+import com.fasterxml.jackson.annotation.JsonInclude;
+import com.fasterxml.jackson.annotation.JsonInclude.Include;
+
 import model.data.DataResource;
 import model.status.StatusUpdate;
 
@@ -9,6 +13,8 @@ import model.status.StatusUpdate;
  * @author Sonny.Saniev
  * 
  */
+@JsonInclude(Include.NON_NULL)
+@JsonIgnoreProperties(ignoreUnknown = true)
 public class ServiceResource {
 
 	public String serviceResourceId;
