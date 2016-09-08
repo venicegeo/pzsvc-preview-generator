@@ -23,14 +23,20 @@ import org.mongojack.DBUpdate;
 import org.mongojack.JacksonDBCollection;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
+import org.springframework.web.client.ResourceAccessException;
+
+import com.mongodb.BasicDBObject;
 import com.mongodb.DBCollection;
 import com.mongodb.MongoClient;
 import com.mongodb.MongoClientURI;
+import com.mongodb.MongoTimeoutException;
+
 import generator.model.ServiceResource;
 import model.job.JobProgress;
 
 /**
- * Accessor for MongoDB instance to persist models.
+ * Accessor for MongoDB instance to persist models. 
+ * @see pz-jobmanager implementation as main reference.
  * 
  */
 @Component
@@ -108,23 +114,24 @@ public class MongoAccessor {
 	 * @return The Job with the specified Id
 	 * @throws InterruptedException
 	 */
-//	public Job getJobById(String jobId) throws ResourceAccessException, InterruptedException {
-//		BasicDBObject query = new BasicDBObject("jobId", jobId);
-//		Job job;
-//
-//		try {
-//			if ((job = getJobCollection().findOne(query)) == null) {
-//				// In case the Job was being updated, or it doesn't exist at this point, try once more. I admit this is
-//				// not optimal, but it certainly covers a host of race conditions.
-//				Thread.sleep(100);
-//				job = getJobCollection().findOne(query);
-//			}
-//		} catch (MongoTimeoutException mte) {
-//			throw new ResourceAccessException("MongoDB instance not available.");
-//		}
-//
-//		return job;
-//	}
+	public ServiceResource getServiceResourceById(String serviceResourceId) throws ResourceAccessException, InterruptedException {
+		BasicDBObject query = new BasicDBObject("serviceResourceId", serviceResourceId);
+		ServiceResource serviceResource;
+
+		try {
+			if ((serviceResource = getJobCollection().findOne(query)) == null) {
+				// In case the serviceResource was being updated, or it doesn't
+				// exist at this point, try once more. I admit this is
+				// not optimal, but it certainly covers a host of race conditions.
+				Thread.sleep(100);
+				serviceResource = getJobCollection().findOne(query);
+			}
+		} catch (MongoTimeoutException mte) {
+			throw new ResourceAccessException("MongoDB instance not available.");
+		}
+
+		return serviceResource;
+	}
 
 	/**
 	 * Gets a list of Jobs from the database.
@@ -192,22 +199,11 @@ public class MongoAccessor {
 	 * @param jobId
 	 *            The Job Id to update
 	 * @param progress
-	 *            The progres to set
+	 *            The progress to set
 	 */
 	public void updateJobProgress(String jobId, JobProgress progress) {
 		getJobCollection().update(DBQuery.is("jobId", jobId), DBUpdate.set("progress", progress));
 	}
-
-	/**
-	 * Updates the Status of a Job. This will update the result, progress, and status of the Job. This method will
-	 * update in a single write to the database.
-	 * 
-	 * @param jobId
-	 *            The Id of the Job whose status to update
-	 * @param statusUpdate
-	 *            The Status Update information
-	 */
-
 
 	/**
 	 * Updates the Job with the Status Update; a Status that contains a Result object.
@@ -256,8 +252,8 @@ public class MongoAccessor {
 	 * @param jobId
 	 *            The Id of the job to delete
 	 */
-	public void removeJob(String jobId) {
-		getJobCollection().remove(DBQuery.is("jobId", jobId));
+	public void removeJob(String serviceId) {
+		getJobCollection().remove(DBQuery.is("serviceId", serviceId));
 	}
 
 	/**

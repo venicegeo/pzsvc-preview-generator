@@ -49,6 +49,7 @@ import model.data.location.FileAccessFactory;
 import model.data.location.FileLocation;
 import model.data.location.S3FileStore;
 import model.data.type.RasterDataType;
+import model.job.JobProgress;
 import model.job.metadata.ResourceMetadata;
 import model.status.StatusUpdate;
 import util.UUIDFactory;
@@ -91,14 +92,17 @@ public class RasterGenerator {
 	 */
 	@Async
 	public Future<String> run(RasterCropRequest payload, String id) throws Exception {
-System.out.println("------------------------------------STARTED THREAD: " + id);
+		
+		// Crop raster
 		DataResource dataResource = cropRasterCoverage(payload);
-System.out.println("------------------------------------FINISHED THREAD: " + id);
 
+		// Create storage model
 		ServiceResource serviceResource = new ServiceResource();
 		serviceResource.setServiceResourceId(id);
-		serviceResource.setPercentComplete(Integer.valueOf((Math.random()*100)+"")); // modify this later to return accurat numbers
-		serviceResource.setStatus(new StatusUpdate(StatusUpdate.STATUS_SUCCESS));
+		JobProgress jobProgress = new JobProgress((int) (Math.random() * 100));
+		StatusUpdate statusUpdate = new StatusUpdate(StatusUpdate.STATUS_SUCCESS);
+		statusUpdate.setProgress(jobProgress);
+		serviceResource.setStatus(statusUpdate);
 		serviceResource.setResult(dataResource);
 		
 		// persist ServiceResource
@@ -117,7 +121,8 @@ System.out.println("------------------------------------FINISHED THREAD: " + id)
 	public DataResource cropRasterCoverage(RasterCropRequest payload) throws Exception {
 
 		// Read Original File to From S3
-		FileLocation fileLocation = new S3FileStore(payload.getSource().getBucketName(), payload.getSource().getFileName(), payload.getSource().getDomain());
+		Long fileSize = Long.valueOf(0);
+		FileLocation fileLocation = new S3FileStore(payload.getSource().getBucketName(), payload.getSource().getFileName(), fileSize, payload.getSource().getDomain());
 		File tiff = getFileFromS3(fileLocation);
 
 		// Create Temporary Local Write Directory
@@ -214,10 +219,10 @@ System.out.println("------------------------------------FINISHED THREAD: " + id)
 		ResourceMetadata resourceMetadata = new ResourceMetadata();
 		resourceMetadata.name = "External Crop Raster Service";
 		resourceMetadata.description = "Service that takes payload containing S3 location and bounding box for some raster file, downloads, crops and uploads the crop back up to s3.";
-		resourceMetadata.url = "http://host:8086/crop";
-		resourceMetadata.method = "POST";
-		resourceMetadata.id = id;
-		
+//		resourceMetadata.url = "http://host:8086/crop";
+//		resourceMetadata.method = "POST";
+//		resourceMetadata.id = id;
+
 		DataResource dataSource = new DataResource();
 		dataSource.dataType=dataType;
 		dataSource.metadata = resourceMetadata;

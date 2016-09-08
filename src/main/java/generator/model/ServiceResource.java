@@ -13,7 +13,6 @@ public class ServiceResource {
 
 	public String serviceResourceId;
 	public StatusUpdate status;
-	public Integer percentComplete;
 	public DataResource result;
 
 	public String getServiceResourceId() {
@@ -38,13 +37,5 @@ public class ServiceResource {
 
 	public void setResult(DataResource result) {
 		this.result = result;
-	}
-
-	public Integer getPercentComplete() {
-		return percentComplete;
-	}
-
-	public void setPercentComplete(Integer percentComplete) {
-		this.percentComplete = percentComplete;
 	}
 }

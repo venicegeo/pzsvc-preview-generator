@@ -102,15 +102,13 @@ public class ServiceEntrypoint {
 
 	/**
 	 * 
-	 * @param jobId
+	 * @param serviceId
 	 * @return
 	 */
-	@RequestMapping(value = "/cropasync/status/{jobId}", method = RequestMethod.GET, produces={"application/json; charset=UTF-8"})
-	public ResponseEntity<?> processRasterAsyncGetStatus(@PathVariable(value = "jobId") String jobId) {
+	@RequestMapping(value = "/cropasync/status/{serviceId}", method = RequestMethod.GET, produces={"application/json; charset=UTF-8"})
+	public ResponseEntity<?> processRasterAsyncGetStatus(@PathVariable(value = "serviceId") String serviceId) {
 		try {
-			StatusUpdate status = new StatusUpdate(StatusUpdate.STATUS_RUNNING);
-			//StatusUpdate status = serviceThreadManager.getJobStatus(jobId);
-			return new ResponseEntity<StatusUpdate>(status, HttpStatus.OK);
+			return new ResponseEntity<StatusUpdate>(serviceThreadManager.getJobStatus(serviceId), HttpStatus.OK);
 		} catch (Exception e) {
 			e.printStackTrace();
 			return new ResponseEntity<ErrorResponse>(new ErrorResponse(e.getMessage()), HttpStatus.INTERNAL_SERVER_ERROR);
@@ -119,17 +117,13 @@ public class ServiceEntrypoint {
 
 	/**
 	 * 
-	 * @param jobId
+	 * @param serviceId
 	 * @return
 	 */
-	@RequestMapping(value = "/cropasync/result/{jobId}", method = RequestMethod.GET, produces={"application/json; charset=UTF-8"})
-	public ResponseEntity<?> processRasterAsyncGetResult(@PathVariable(value = "jobId") String jobId) {
+	@RequestMapping(value = "/cropasync/result/{serviceId}", method = RequestMethod.GET, produces={"application/json; charset=UTF-8"})
+	public ResponseEntity<?> processRasterAsyncGetResult(@PathVariable(value = "serviceId") String serviceId) {
 		try {
-			//TODO: obtain dataResource from the crop service.
-			DataResource dataResource=null;
-			//DataResource dataResource = serviceThreadManager.getJobResult(jobId);
-			return new ResponseEntity<DataResource>(dataResource, HttpStatus.OK);
-
+			return new ResponseEntity<DataResource>(serviceThreadManager.getServiceResult(serviceId), HttpStatus.OK);
 		} catch (Exception e) {
 			e.printStackTrace();
 			return new ResponseEntity<ErrorResponse>(new ErrorResponse(e.getMessage()), HttpStatus.INTERNAL_SERVER_ERROR);
@@ -138,13 +132,13 @@ public class ServiceEntrypoint {
 
 	/**
 	 * 
-	 * @param jobId
+	 * @param serviceId
 	 * @return
 	 */
-	@RequestMapping(value = "/cropasync/job/{jobId}", method = RequestMethod.DELETE, produces={"application/json; charset=UTF-8"})
-	public ResponseEntity<?> processRasterAsyncDeleteJob(@PathVariable(value = "jobId") String jobId) {
+	@RequestMapping(value = "/cropasync/job/{serviceId}", method = RequestMethod.DELETE, produces={"application/json; charset=UTF-8"})
+	public ResponseEntity<?> processRasterAsyncDeleteJob(@PathVariable(value = "serviceId") String serviceId) {
 		try {
-			//serviceThreadManager.deleteJob(jobId);
+			serviceThreadManager.deleteService(serviceId);
 			return new ResponseEntity(HttpStatus.OK);
 		} catch (Exception e) {
 			e.printStackTrace();
