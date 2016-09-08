@@ -92,7 +92,6 @@ public class RasterGenerator {
 	 */
 	@Async
 	public Future<String> run(RasterCropRequest payload, String id) throws Exception {
-System.out.println("aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa started thread " + id);
 		// Crop raster
 		DataResource dataResource = cropRasterCoverage(payload, id);
 
@@ -107,7 +106,6 @@ System.out.println("aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa started thread " + i
 		
 		// persist ServiceResource
 		mongoAccessor.addServiceResource(serviceResource);
-System.out.println("bbbbbbbbbbbbbbbbbbbbbbbbbbbbbb finished thread " + id);
 		return new AsyncResult<String>("crop raster thread");
 	}
 	
