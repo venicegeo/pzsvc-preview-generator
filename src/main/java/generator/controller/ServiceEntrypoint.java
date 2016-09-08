@@ -18,14 +18,18 @@ package generator.controller;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestMethod;
 import org.springframework.web.bind.annotation.RestController;
 import generator.components.RasterGenerator;
+import generator.components.ServiceThreadManager;
 import generator.model.ErrorResponse;
 import generator.model.RasterCropRequest;
 import model.data.DataResource;
+import model.response.JobResponse;
+import model.status.StatusUpdate;
 
 /**
  * Handles raster resource payload requests, and processes them from s3.
@@ -42,24 +46,27 @@ import model.data.DataResource;
 public class ServiceEntrypoint {
 
 	@Autowired 
-	RasterGenerator rasterGenerator;
+	private RasterGenerator rasterGenerator;
+
+	@Autowired 
+	private ServiceThreadManager serviceThreadManager;
 	
-	/*
+	/**
 	 * Entry point for raw post accepting s3 location of the raster resource and bounding box 
 	 * to parse and return the location of the newly created s3 resource with the given bounding box.
 	 *  
 	 * @param RasterCropRequest
-	 *            The Json Payload
+	 *            Required payload
 	 * @return DataResource object or an error.
 	 */
 	@RequestMapping(value = "/crop", method = RequestMethod.POST, produces={"application/json; charset=UTF-8"})
 	public ResponseEntity<?> processRasterResouceRawPost2(@RequestBody RasterCropRequest request) {
 		DataResource dataResource=null;
 		try {
-				dataResource = rasterGenerator.cropRasterCoverage(request);
+				dataResource = rasterGenerator.cropRasterCoverage(request, "123456");
 				
 				// sleeping for 30 seconds to assist integration tests for full coverage of external services 
-				Thread.sleep(30000);
+				Thread.sleep(15000);
 
 			} catch (Exception e) {
 				e.printStackTrace();
@@ -74,13 +81,81 @@ public class ServiceEntrypoint {
 	}
 
 	/**
+	 * Entry point for accepting s3 location of the raster resource and bounding 
+	 * box info to parse and return the location of the newly cropped s3 resource.
+	 * This endpoint runs the crop service asynchronously on a new thread.
+	 *  
+	 * @param RasterCropRequest
+	 *            Required payload
+	 * @return ResponseEntity<?> of JobResponse or ErrorResponse
+	 */
+	@RequestMapping(value = "/cropasync", method = RequestMethod.POST, produces={"application/json; charset=UTF-8"})
+	public ResponseEntity<?> processRasterAsync(@RequestBody RasterCropRequest request) {
+		try {
+			JobResponse job = new JobResponse(serviceThreadManager.processRasterAsync(request));
+			return new ResponseEntity<JobResponse>(job, HttpStatus.OK);
+		} catch (Exception e) {
+			e.printStackTrace();
+			return new ResponseEntity<ErrorResponse>(new ErrorResponse(e.getMessage()), HttpStatus.INTERNAL_SERVER_ERROR);
+		}
+	}
+
+	/**
+	 * 
+	 * @param serviceId
+	 * @return
+	 */
+	@RequestMapping(value = "/cropasync/status/{serviceId}", method = RequestMethod.GET, produces={"application/json; charset=UTF-8"})
+	public ResponseEntity<?> processRasterAsyncGetStatus(@PathVariable(value = "serviceId") String serviceId) {
+		try {
+			return new ResponseEntity<StatusUpdate>(serviceThreadManager.getJobStatus(serviceId), HttpStatus.OK);
+		} catch (Exception e) {
+			e.printStackTrace();
+			return new ResponseEntity<ErrorResponse>(new ErrorResponse(e.getMessage()), HttpStatus.INTERNAL_SERVER_ERROR);
+		}
+	}
+
+	/**
+	 * 
+	 * @param serviceId
+	 * @return
+	 */
+	@RequestMapping(value = "/cropasync/result/{serviceId}", method = RequestMethod.GET, produces={"application/json; charset=UTF-8"})
+	public ResponseEntity<?> processRasterAsyncGetResult(@PathVariable(value = "serviceId") String serviceId) {
+		try {
+			return new ResponseEntity<DataResource>(serviceThreadManager.getServiceResult(serviceId), HttpStatus.OK);
+		} catch (Exception e) {
+			e.printStackTrace();
+			return new ResponseEntity<ErrorResponse>(new ErrorResponse(e.getMessage()), HttpStatus.INTERNAL_SERVER_ERROR);
+		}
+	}
+
+	/**
+	 * 
+	 * @param serviceId
+	 * @return
+	 */
+	@RequestMapping(value = "/cropasync/job/{serviceId}", method = RequestMethod.DELETE, produces={"application/json; charset=UTF-8"})
+	public ResponseEntity<?> processRasterAsyncDeleteJob(@PathVariable(value = "serviceId") String serviceId) {
+		try {
+			serviceThreadManager.deleteService(serviceId);
+			return new ResponseEntity(HttpStatus.OK);
+		} catch (Exception e) {
+			e.printStackTrace();
+			return new ResponseEntity<ErrorResponse>(new ErrorResponse(e.getMessage()), HttpStatus.INTERNAL_SERVER_ERROR);
+		}
+	}
+	
+	/**
 	 * 
 	 * Info endpoint for the service to see if it is running.
 	 * @return String true
 	 */
-	@RequestMapping(value = "/info", method = RequestMethod.GET)
+	@RequestMapping(value = "/", method = RequestMethod.GET)
 	public String getInfo() {
-		return "pz-svcs-prevgen is alive!\n See \"https://github.com/venicegeo/pzsvc-preview-generator/wiki/pzsvc-preview-generator-external-service\" for usage.";
+		return "Greetings Earthlings. pz-svcs-prevgen is alive!";
+		
+
 	}
 
 }
