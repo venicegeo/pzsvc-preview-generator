@@ -64,10 +64,6 @@ public class ServiceEntrypoint {
 		DataResource dataResource=null;
 		try {
 				dataResource = rasterGenerator.cropRasterCoverage(request, "123456");
-				
-				// sleeping for 30 seconds to assist integration tests for full coverage of external services 
-				Thread.sleep(15000);
-
 			} catch (Exception e) {
 				e.printStackTrace();
 				return new ResponseEntity<ErrorResponse>(new ErrorResponse(e.getMessage()), HttpStatus.INTERNAL_SERVER_ERROR);

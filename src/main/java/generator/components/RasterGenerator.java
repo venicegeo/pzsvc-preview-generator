@@ -118,6 +118,9 @@ public class RasterGenerator {
 	 */
 	public DataResource cropRasterCoverage(RasterCropRequest payload, String serviceId) throws Exception {
 
+		// sleeping for 15 seconds to assist integration tests for full coverage of external services 
+		Thread.sleep(15000);
+		
 		// Read Original File to From S3
 		Long fileSize = Long.valueOf(0);
 		FileLocation fileLocation = new S3FileStore(payload.getSource().getBucketName(), payload.getSource().getFileName(), fileSize, payload.getSource().getDomain());
