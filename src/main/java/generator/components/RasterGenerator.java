@@ -118,12 +118,13 @@ public class RasterGenerator {
 	 */
 	public DataResource cropRasterCoverage(RasterCropRequest payload, String serviceId) throws Exception {
 
-		// sleeping for 15 seconds to assist integration tests for full coverage of external services 
+		// sleeping for 15 seconds for demo and test purposes
 		Thread.sleep(15000);
-		
+
 		// Read Original File to From S3
 		Long fileSize = Long.valueOf(0);
-		FileLocation fileLocation = new S3FileStore(payload.getSource().getBucketName(), payload.getSource().getFileName(), fileSize, payload.getSource().getDomain());
+		FileLocation fileLocation = new S3FileStore(payload.getSource().getBucketName(),
+				payload.getSource().getFileName(), fileSize, payload.getSource().getDomain());
 		File tiff = getFileFromS3(fileLocation, serviceId);
 
 		// Create Temporary Local Write Directory
@@ -143,7 +144,10 @@ public class RasterGenerator {
 		double ymin = payload.getBounds().getMiny();
 		double xmax = payload.getBounds().getMaxx();
 		double ymax = payload.getBounds().getMaxy();
-		final GeneralEnvelope cropEnvelope = new GeneralEnvelope(new double[] { xmin, ymin}, new double[] { xmax, ymax});
+		
+		double[] min = { xmin, ymin };
+		double[] max = { xmax, ymax };
+		final GeneralEnvelope cropEnvelope = new GeneralEnvelope(min, max);
 
 		// Crop the Raster
 		final CoverageProcessor processor = CoverageProcessor.getInstance();
@@ -153,7 +157,8 @@ public class RasterGenerator {
 		GridCoverage2D cropped = (GridCoverage2D) processor.doOperation(param);
 
 		// Writing Cropped Image to File
-		String newFilePath = new StringBuilder(localWriteDir.getAbsolutePath()).append(File.separator).append(cropped.getName().toString()).append(".tif").toString();
+		String newFilePath = new StringBuilder(localWriteDir.getAbsolutePath()).append(File.separator)
+				.append(cropped.getName().toString()).append(".tif").toString();
 		final File s3File = new File(newFilePath);
 		GridCoverageWriter writer = format.getWriter(s3File);
 		try {
@@ -170,22 +175,18 @@ public class RasterGenerator {
 		String fileName = writeFileToS3(s3File, fileLocation);
 
 		// Close Things
-	    if (gridCoverage != null) {
-	        try {
-	            // This is essential for releasing locks on image files!
-	            PlanarImage planarImage = (PlanarImage) gridCoverage.getRenderedImage();
-	            ImageUtilities.disposePlanarImageChain(planarImage);
-	            // TODO:
-	            //planarImage.dispose();
-	            //planarImage.removeSinks();
-	            gridCoverage.dispose(false);
-	        } catch (Throwable t) {
-	            // ignored
-	        }
-	    }
+		if (gridCoverage != null) {
+			try {
+				// This is essential for releasing locks on image files!
+				PlanarImage planarImage = (PlanarImage) gridCoverage.getRenderedImage();
+				ImageUtilities.disposePlanarImageChain(planarImage);
+				gridCoverage.dispose(false);
+			} catch (Throwable t) {
+				// ignored
+			}
+		}
 
 		cropped.dispose(true);
-		//gridCoverage.dispose(true);
 		try {
 			if (reader != null)
 				reader.dispose();
@@ -205,26 +206,26 @@ public class RasterGenerator {
 	 * @param id, request
 	 * @return DataResource
 	 */
-	private DataResource getDataSource(String id, RasterCropRequest request){
-		
-		//create data type to return
+	private DataResource getDataSource(String id, RasterCropRequest request) {
+
+		// create data type to return
 		S3FileStore s3Store = new S3FileStore();
 		s3Store.domainName = request.getSource().getDomain();
 		s3Store.bucketName = S3_OUTPUT_BUCKET;
 		s3Store.fileName = id;
-		
+
 		RasterDataType dataType = new RasterDataType();
 		dataType.setLocation(s3Store);
 		dataType.setMimeType("image/tiff");
-		
+
 		ResourceMetadata resourceMetadata = new ResourceMetadata();
 		resourceMetadata.name = "External Crop Raster Service";
 		resourceMetadata.description = "Service that takes payload containing S3 location and bounding box for some raster file, downloads, crops and uploads the crop back up to s3.";
 
 		DataResource dataSource = new DataResource();
-		dataSource.dataType=dataType;
+		dataSource.dataType = dataType;
 		dataSource.metadata = resourceMetadata;
-		
+
 		return dataSource;
 	}
 	
@@ -233,15 +234,15 @@ public class RasterGenerator {
 	 * 
 	 * @param file the object
 	 */
-	private String writeFileToS3(File file, FileLocation fileLocation) throws FileNotFoundException{
+	private String writeFileToS3(File file, FileLocation fileLocation) throws FileNotFoundException {
 
 		ObjectMetadata metadata = new ObjectMetadata();
 		metadata.setContentLength(file.length());
 		String fileKey = String.format("%s-%s", uuidFactory.getUUID(), file.getName());
-		
-		//BasicAWSCredentials credentials = new BasicAWSCredentials(AMAZONS3_ACCESS_KEY, AMAZONS3_PRIVATE_KEY);
+
+		// BasicAWSCredentials credentials = new BasicAWSCredentials(AMAZONS3_ACCESS_KEY, AMAZONS3_PRIVATE_KEY);
 		s3Client = new AmazonS3Client();
-		
+
 		// Making the object public
 		PutObjectRequest putObj = new PutObjectRequest(S3_OUTPUT_BUCKET, fileKey, file);
 		putObj.setCannedAcl(CannedAccessControlList.PublicRead);
@@ -261,9 +262,10 @@ public class RasterGenerator {
 	 */
 	private File getFileFromS3(FileLocation fileLocation, String serviceId) throws IOException, Exception {
 
-		// Obtain file stream from AWS S3
+		// Obtain file stream from s3
 		FileAccessFactory fileFactory = new FileAccessFactory(AMAZONS3_ACCESS_KEY, AMAZONS3_PRIVATE_KEY);
-		File file = new File(String.format("%s_%s%s%s", RASTER_LOCAL_DIRECTORY, serviceId, File.separator, fileLocation.getFileName()));
+		File file = new File(String.format("%s_%s%s%s", RASTER_LOCAL_DIRECTORY, serviceId, File.separator,
+				fileLocation.getFileName()));
 
 		InputStream inputStream = fileFactory.getFile(fileLocation);
 		FileUtils.copyInputStreamToFile(inputStream, file);
@@ -291,11 +293,10 @@ public class RasterGenerator {
 				if (files[i].isDirectory()) {
 					deleteDirectoryRecursive(files[i]);
 				}
-
 				if (!files[i].delete() && files[i].exists())
-					throw new Exception("Unable to delete file " + files[i].getName() + " from " + directory.getAbsolutePath());
+					throw new Exception(
+							"Unable to delete file " + files[i].getName() + " from " + directory.getAbsolutePath());
 			}
-
 			result = directory.delete();
 		}
 

@@ -97,6 +97,7 @@ public class ServiceEntrypoint {
 	}
 
 	/**
+	 * Returns the status of the running process.
 	 * 
 	 * @param serviceId
 	 * @return
@@ -112,6 +113,7 @@ public class ServiceEntrypoint {
 	}
 
 	/**
+	 * Returns the result of the completed process.
 	 * 
 	 * @param serviceId
 	 * @return
@@ -127,6 +129,7 @@ public class ServiceEntrypoint {
 	}
 
 	/**
+	 * Delete running job and stop the thread if possible
 	 * 
 	 * @param serviceId
 	 * @return
@@ -143,15 +146,12 @@ public class ServiceEntrypoint {
 	}
 	
 	/**
-	 * 
 	 * Info endpoint for the service to see if it is running.
+	 * 
 	 * @return String true
 	 */
 	@RequestMapping(value = "/", method = RequestMethod.GET)
 	public String getInfo() {
 		return "Greetings Earthlings. pz-svcs-prevgen is alive!";
-		
-
 	}
-
 }
