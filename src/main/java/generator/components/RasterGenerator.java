@@ -29,21 +29,27 @@ import org.apache.commons.io.FileUtils;
 import org.geotools.coverage.grid.GridCoverage2D;
 import org.geotools.coverage.processing.CoverageProcessor;
 import org.geotools.gce.geotiff.GeoTiffFormat;
+import org.geotools.geometry.GeneralEnvelope;
+import org.geotools.resources.image.ImageUtilities;
 import org.opengis.coverage.grid.GridCoverageReader;
 import org.opengis.coverage.grid.GridCoverageWriter;
 import org.opengis.parameter.ParameterValueGroup;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.scheduling.annotation.Async;
 import org.springframework.scheduling.annotation.AsyncResult;
 import org.springframework.stereotype.Component;
 
+import com.amazonaws.AmazonClientException;
 import com.amazonaws.services.s3.AmazonS3;
 import com.amazonaws.services.s3.AmazonS3Client;
 import com.amazonaws.services.s3.model.CannedAccessControlList;
 import com.amazonaws.services.s3.model.ObjectMetadata;
 import com.amazonaws.services.s3.model.PutObjectRequest;
 
+import exception.InvalidInputException;
 import generator.model.RasterCropRequest;
 import generator.model.ServiceResource;
 import model.data.DataResource;
@@ -55,9 +61,6 @@ import model.job.JobProgress;
 import model.job.metadata.ResourceMetadata;
 import model.status.StatusUpdate;
 import util.UUIDFactory;
-
-import org.geotools.geometry.GeneralEnvelope;
-import org.geotools.resources.image.ImageUtilities;
 
 /**
  * 
@@ -85,15 +88,15 @@ public class RasterGenerator {
 	private AmazonS3 s3Client;
 
 	private static final String S3_OUTPUT_BUCKET = "pz-svcs-prevgen-output";
+	private final static Logger LOGGER = LoggerFactory.getLogger(RasterGenerator.class);
 
 	/**
 	 * Asynchronous handler for cropping the image demonstrating service monitor capabilities of piazza.
 	 * 
 	 * @return Future
-	 * @throws Exception 
 	 */
 	@Async
-	public Future<String> run(RasterCropRequest payload, String id) throws Exception {
+	public Future<String> run(RasterCropRequest payload, String id) throws AmazonClientException, InvalidInputException, IOException, InterruptedException {
 		// Crop raster
 		DataResource dataResource = cropRasterCoverage(payload, id);
 
@@ -119,10 +122,8 @@ public class RasterGenerator {
 	 * Create a cropped coverage.
 	 * 
 	 * @param RasterCropRequest Payload to Describe the Resource Location and Bounding Box.
-	 * 
-	 * @throws Exception 
 	 */
-	public DataResource cropRasterCoverage(RasterCropRequest payload, String serviceId) throws Exception {
+	public DataResource cropRasterCoverage(RasterCropRequest payload, String serviceId) throws AmazonClientException, InvalidInputException, IOException, InterruptedException {
 
 		// sleeping for 15 seconds for demo and test purposes
 		Thread.sleep(15000);
@@ -170,10 +171,12 @@ public class RasterGenerator {
 		try {
 			writer.write(cropped, null);
 		} catch (IOException e) {
+			LOGGER.warn("Error writing Grid Coverage file.", e);
 		} finally {
 			try {
 				writer.dispose();
-			} catch (Throwable e) {
+			} catch (Exception e) {
+				LOGGER.warn("Error disposing of Grid Writer.", e);
 			}
 		}
 
@@ -187,8 +190,8 @@ public class RasterGenerator {
 				PlanarImage planarImage = (PlanarImage) gridCoverage.getRenderedImage();
 				ImageUtilities.disposePlanarImageChain(planarImage);
 				gridCoverage.dispose(false);
-			} catch (Throwable t) {
-				// ignored
+			} catch (Exception t) {
+				LOGGER.error("Error releasing locks on Grid Coverage files.", t);
 			}
 		}
 
@@ -196,8 +199,8 @@ public class RasterGenerator {
 		try {
 			if (reader != null)
 				reader.dispose();
-		} catch (Throwable e) {
-
+		} catch (Exception e) {
+			LOGGER.error("Error disposing the Grid Coverage Reader.", e);
 		}
 
 		// Delete local temp folder recursively
@@ -265,8 +268,10 @@ public class RasterGenerator {
 	 * @return File file object
 	 * @throws Exception
 	 * @throws IOException
+	 * @throws InvalidInputException 
+	 * @throws AmazonClientException 
 	 */
-	private File getFileFromS3(FileLocation fileLocation, String serviceId) throws IOException, Exception {
+	private File getFileFromS3(FileLocation fileLocation, String serviceId) throws AmazonClientException, InvalidInputException, IOException  {
 
 		// Obtain file stream from s3
 		FileAccessFactory fileFactory = new FileAccessFactory(AMAZONS3_ACCESS_KEY, AMAZONS3_PRIVATE_KEY);
@@ -287,9 +292,10 @@ public class RasterGenerator {
 	 *            Directory to be deleted
 	 * 
 	 * @return boolean if successful
+	 * @throws IOException 
 	 * @throws Exception
 	 */
-	private boolean deleteDirectoryRecursive(File directory) throws Exception {
+	private boolean deleteDirectoryRecursive(File directory) throws IOException {
 		boolean result = false;
 
 		if (directory.isDirectory()) {
@@ -300,7 +306,7 @@ public class RasterGenerator {
 					deleteDirectoryRecursive(files[i]);
 				}
 				if (!files[i].delete() && files[i].exists())
-					throw new Exception(
+					throw new IOException(
 							"Unable to delete file " + files[i].getName() + " from " + directory.getAbsolutePath());
 			}
 			result = directory.delete();

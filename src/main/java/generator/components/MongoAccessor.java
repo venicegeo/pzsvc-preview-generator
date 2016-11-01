@@ -21,6 +21,8 @@ import javax.annotation.PreDestroy;
 import org.mongojack.DBQuery;
 import org.mongojack.DBUpdate;
 import org.mongojack.JacksonDBCollection;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
 import org.springframework.web.client.ResourceAccessException;
@@ -35,7 +37,8 @@ import generator.model.ServiceResource;
 import model.job.JobProgress;
 
 /**
- * Accessor for MongoDB instance to persist models. 
+ * Accessor for MongoDB instance to persist models.
+ * 
  * @see pz-jobmanager implementation as main reference.
  * 
  */
@@ -49,6 +52,8 @@ public class MongoAccessor {
 	private String JOB_COLLECTION_NAME;
 	private MongoClient mongoClient;
 
+	private final static Logger LOGGER = LoggerFactory.getLogger(MongoAccessor.class);
+
 	public MongoAccessor() {
 	}
 
@@ -57,8 +62,7 @@ public class MongoAccessor {
 		try {
 			mongoClient = new MongoClient(new MongoClientURI(DATABASE_URI));
 		} catch (Exception exception) {
-			System.out.println("Error connecting to MongoDB Instance.");
-			exception.printStackTrace();
+			LOGGER.error("Error connecting to MongoDB Instance.", exception);
 		}
 	}
 
@@ -116,6 +120,8 @@ public class MongoAccessor {
 				serviceResource = getJobCollection().findOne(query);
 			}
 		} catch (MongoTimeoutException mte) {
+			String error = "MongoDB instance not available.";
+			LOGGER.error(error, mte);
 			throw new ResourceAccessException("MongoDB instance not available.");
 		}
 
