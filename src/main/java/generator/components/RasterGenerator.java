@@ -77,11 +77,9 @@ public class RasterGenerator {
 	private UUIDFactory uuidFactory;
 	@Autowired
 	private MongoAccessor mongoAccessor;
+	@Autowired
+	private FileUtility fileUtility;
 	
-	@Value("${s3.key.access:}")
-	private String AMAZONS3_ACCESS_KEY;
-	@Value("${s3.key.private:}")
-	private String AMAZONS3_PRIVATE_KEY;
 	@Value("${raster.temp.directory}")
 	private String RASTER_LOCAL_DIRECTORY;
 
@@ -132,7 +130,7 @@ public class RasterGenerator {
 		Long fileSize = Long.valueOf(0);
 		FileLocation fileLocation = new S3FileStore(payload.getSource().getBucketName(),
 				payload.getSource().getFileName(), fileSize, payload.getSource().getDomain());
-		File tiff = getFileFromS3(fileLocation, serviceId);
+		File tiff = fileUtility.getFileFromS3(fileLocation, serviceId);
 
 		// Create Temporary Local Write Directory
 		String tempTopFolder = String.format("%s_%s", RASTER_LOCAL_DIRECTORY, serviceId);
@@ -258,31 +256,6 @@ public class RasterGenerator {
 		s3Client.putObject(putObj);
 
 		return fileKey;
-	}
-	
-	/**
-	 * Will Copy File from S3 to Local Dir and Return the File
-	 * 
-	 * @param fileLocation
-	 *            Interface to get file info from.
-	 * @return File file object
-	 * @throws Exception
-	 * @throws IOException
-	 * @throws InvalidInputException 
-	 * @throws AmazonClientException 
-	 */
-	private File getFileFromS3(FileLocation fileLocation, String serviceId) throws AmazonClientException, InvalidInputException, IOException  {
-
-		// Obtain file stream from s3
-		FileAccessFactory fileFactory = new FileAccessFactory(AMAZONS3_ACCESS_KEY, AMAZONS3_PRIVATE_KEY);
-		File file = new File(String.format("%s_%s%s%s", RASTER_LOCAL_DIRECTORY, serviceId, File.separator,
-				fileLocation.getFileName()));
-
-		InputStream inputStream = fileFactory.getFile(fileLocation);
-		FileUtils.copyInputStreamToFile(inputStream, file);
-		inputStream.close();
-
-		return file;
 	}
 	
 	/**

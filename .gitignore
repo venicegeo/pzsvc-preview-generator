@@ -1,1 +1,3 @@
 /target/
+data/elasticsearch/nodes/0/node.lock
+*.st

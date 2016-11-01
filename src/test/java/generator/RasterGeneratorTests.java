@@ -15,14 +15,26 @@
  **/
 package generator;
 
+import java.io.File;
+import java.io.IOException;
+
 import org.junit.Before;
+import org.junit.Test;
 import org.mockito.InjectMocks;
+import org.mockito.Mock;
+import org.mockito.Mockito;
 import org.mockito.MockitoAnnotations;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.test.util.ReflectionTestUtils;
 
+import com.amazonaws.AmazonClientException;
+
+import exception.InvalidInputException;
+import generator.components.FileUtility;
 import generator.components.MongoAccessor;
 import generator.components.RasterGenerator;
+import generator.model.BoundingBoxInfo;
+import generator.model.RasterCropRequest;
+import generator.model.S3StoreInfo;
 import util.UUIDFactory;
 
 /**
@@ -32,22 +44,54 @@ import util.UUIDFactory;
  *
  */
 public class RasterGeneratorTests {
-	@Autowired
+	@Mock
 	private UUIDFactory uuidFactory;
-	@Autowired
+	@Mock
 	private MongoAccessor mongoAccessor;
+	@Mock
+	private FileUtility fileUtility;
 	@InjectMocks
 	private RasterGenerator rasterGenerator;
+
+	private RasterCropRequest mockRequest = new RasterCropRequest();
+	private String testDataPath;
+	private File testFile;
 
 	/**
 	 * Initialized
 	 */
 	@Before
-	public void setup() {
+	public void setup() throws AmazonClientException, InvalidInputException, IOException {
 		MockitoAnnotations.initMocks(this);
 		ReflectionTestUtils.setField(rasterGenerator, "RASTER_LOCAL_DIRECTORY", "tmp");
+
+		// Initialize common test ata
+		mockRequest.setFunction("crop");
+		BoundingBoxInfo boundingBox = new BoundingBoxInfo();
+		boundingBox.setMinx(-140);
+		boundingBox.setMaxx(-60);
+		boundingBox.setMiny(10);
+		boundingBox.setMaxy(70);
+		mockRequest.setBounds(boundingBox);
+		S3StoreInfo storeInfo = new S3StoreInfo();
+		storeInfo.setBucketName("test");
+		storeInfo.setDomain("test");
+		storeInfo.setFileName("test");
+		mockRequest.setSource(storeInfo);
+
+		// Set the test data path
+		testDataPath = "src" + File.separator + "test" + File.separator + "resources" + File.separator + "elevation.tif";
+		testFile = new File(testDataPath);
+		// When the Raster Generator attempts to get the file, return our test file
+		Mockito.doReturn(testFile).when(fileUtility).getFileFromS3(Mockito.any(), Mockito.anyString());
 	}
-	
-	
+
+	/**
+	 * Tests cropping the test raster file
+	 */
+	@Test
+	public void testCropRaster() {
+
+	}
 
 }
