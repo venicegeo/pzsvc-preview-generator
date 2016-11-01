@@ -19,6 +19,8 @@ import java.io.File;
 import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.io.InputStream;
+import java.security.SecureRandom;
+import java.util.Random;
 import java.util.concurrent.Future;
 
 import javax.media.jai.PlanarImage;
@@ -98,7 +100,11 @@ public class RasterGenerator {
 		// Create storage model
 		ServiceResource serviceResource = new ServiceResource();
 		serviceResource.setServiceResourceId(id);
-		JobProgress jobProgress = new JobProgress((int) (Math.random() * 100));
+		// Generate a random number
+		Random rand = new SecureRandom();
+		// Need to include 100%
+		int percent = rand.nextInt(101);
+		JobProgress jobProgress = new JobProgress(percent);
 		StatusUpdate statusUpdate = new StatusUpdate(StatusUpdate.STATUS_SUCCESS);
 		statusUpdate.setProgress(jobProgress);
 		serviceResource.setStatus(statusUpdate);
