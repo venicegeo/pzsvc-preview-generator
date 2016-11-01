@@ -23,6 +23,7 @@ import java.util.concurrent.Future;
 
 import javax.media.jai.PlanarImage;
 
+import org.apache.commons.io.FileUtils;
 import org.geotools.coverage.grid.GridCoverage2D;
 import org.geotools.coverage.processing.CoverageProcessor;
 import org.geotools.gce.geotiff.GeoTiffFormat;
@@ -71,6 +72,7 @@ public class RasterGenerator {
 	private String RASTER_LOCAL_DIRECTORY;
 
 	private final static Logger LOGGER = LoggerFactory.getLogger(RasterGenerator.class);
+	private long SLEEP_DELAY = 15000;
 
 	/**
 	 * Asynchronous handler for cropping the image demonstrating service monitor capabilities of piazza.
@@ -111,7 +113,7 @@ public class RasterGenerator {
 			throws AmazonClientException, InvalidInputException, IOException, InterruptedException {
 
 		// sleeping for 15 seconds for demo and test purposes
-		Thread.sleep(15000);
+		Thread.sleep(SLEEP_DELAY);
 
 		// Read Original File to From S3
 		Long fileSize = Long.valueOf(0);
@@ -123,7 +125,7 @@ public class RasterGenerator {
 		String tempTopFolder = String.format("%s_%s", RASTER_LOCAL_DIRECTORY, serviceId);
 		File localWriteDir = new File(String.format("%s%s%s", tempTopFolder, File.separator, "writeDir"));
 		localWriteDir.mkdir();
-
+		
 		// Create Format and Reader
 		GeoTiffFormat format = new GeoTiffFormat();
 		GridCoverageReader reader = format.getReader(tiff);
@@ -155,7 +157,7 @@ public class RasterGenerator {
 		GridCoverageWriter writer = format.getWriter(s3File);
 		try {
 			writer.write(cropped, null);
-		} catch (IOException e) {
+		} catch (IllegalArgumentException | IOException e) {
 			LOGGER.warn("Error writing Grid Coverage file.", e);
 		} finally {
 			try {

@@ -15,6 +15,8 @@
  **/
 package generator;
 
+import static org.junit.Assert.assertTrue;
+
 import java.io.File;
 import java.io.IOException;
 
@@ -29,12 +31,13 @@ import org.springframework.test.util.ReflectionTestUtils;
 import com.amazonaws.AmazonClientException;
 
 import exception.InvalidInputException;
-import generator.components.S3FileUtility;
 import generator.components.MongoAccessor;
 import generator.components.RasterGenerator;
+import generator.components.S3FileUtility;
 import generator.model.BoundingBoxInfo;
 import generator.model.RasterCropRequest;
 import generator.model.S3StoreInfo;
+import model.data.DataResource;
 import util.UUIDFactory;
 
 /**
@@ -64,6 +67,7 @@ public class RasterGeneratorTests {
 	public void setup() throws AmazonClientException, InvalidInputException, IOException {
 		MockitoAnnotations.initMocks(this);
 		ReflectionTestUtils.setField(rasterGenerator, "RASTER_LOCAL_DIRECTORY", "tmp");
+		ReflectionTestUtils.setField(rasterGenerator, "SLEEP_DELAY", 1000);
 
 		// Initialize common test ata
 		mockRequest.setFunction("crop");
@@ -92,8 +96,9 @@ public class RasterGeneratorTests {
 	 * Tests cropping the test raster file
 	 */
 	@Test
-	public void testCropRaster() {
-
+	public void testCropRaster() throws AmazonClientException, InvalidInputException, IOException, InterruptedException {
+		DataResource dataResource = rasterGenerator.cropRasterCoverage(mockRequest, "123456");
+		assertTrue(dataResource != null);
 	}
 
 }
