@@ -29,7 +29,7 @@ import org.springframework.test.util.ReflectionTestUtils;
 import com.amazonaws.AmazonClientException;
 
 import exception.InvalidInputException;
-import generator.components.FileUtility;
+import generator.components.S3FileUtility;
 import generator.components.MongoAccessor;
 import generator.components.RasterGenerator;
 import generator.model.BoundingBoxInfo;
@@ -49,7 +49,7 @@ public class RasterGeneratorTests {
 	@Mock
 	private MongoAccessor mongoAccessor;
 	@Mock
-	private FileUtility fileUtility;
+	private S3FileUtility fileUtility;
 	@InjectMocks
 	private RasterGenerator rasterGenerator;
 
@@ -80,10 +80,12 @@ public class RasterGeneratorTests {
 		mockRequest.setSource(storeInfo);
 
 		// Set the test data path
-		testDataPath = "src" + File.separator + "test" + File.separator + "resources" + File.separator + "elevation.tif";
+		testDataPath = "src" + File.separator + "test" + File.separator + "resources" + File.separator + "world.tif";
 		testFile = new File(testDataPath);
 		// When the Raster Generator attempts to get the file, return our test file
 		Mockito.doReturn(testFile).when(fileUtility).getFileFromS3(Mockito.any(), Mockito.anyString());
+		// Report a file name pushed to S3 when run is complete
+		Mockito.doReturn("Output.tif").when(fileUtility).writeFileToS3(Mockito.any(), Mockito.any());
 	}
 
 	/**
