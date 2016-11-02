@@ -72,10 +72,10 @@ public class RasterGeneratorTests {
 		// Initialize common test ata
 		mockRequest.setFunction("crop");
 		BoundingBoxInfo boundingBox = new BoundingBoxInfo();
-		boundingBox.setMinx(-140);
-		boundingBox.setMaxx(-60);
-		boundingBox.setMiny(10);
-		boundingBox.setMaxy(70);
+		boundingBox.setMinx(-140.00);
+		boundingBox.setMaxx(-60.00);
+		boundingBox.setMiny(10.00);
+		boundingBox.setMaxy(70.00);
 		mockRequest.setBounds(boundingBox);
 		S3StoreInfo storeInfo = new S3StoreInfo();
 		storeInfo.setBucketName("test");
@@ -86,8 +86,12 @@ public class RasterGeneratorTests {
 		// Set the test data path
 		testDataPath = "src" + File.separator + "test" + File.separator + "resources" + File.separator + "world.tif";
 		testFile = new File(testDataPath);
+		
+System.out.println(testFile.getName() + "-------------------testFile: " + testFile.getAbsolutePath());
+
 		// When the Raster Generator attempts to get the file, return our test file
 		Mockito.doReturn(testFile).when(fileUtility).getFileFromS3(Mockito.any(), Mockito.anyString());
+
 		// Report a file name pushed to S3 when run is complete
 		Mockito.doReturn("Output.tif").when(fileUtility).writeFileToS3(Mockito.any(), Mockito.any());
 	}
@@ -100,5 +104,4 @@ public class RasterGeneratorTests {
 		DataResource dataResource = rasterGenerator.cropRasterCoverage(mockRequest, "123456");
 		assertTrue(dataResource != null);
 	}
-
 }

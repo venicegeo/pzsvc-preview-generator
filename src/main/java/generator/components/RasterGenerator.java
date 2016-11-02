@@ -120,7 +120,8 @@ public class RasterGenerator {
 		FileLocation fileLocation = new S3FileStore(payload.getSource().getBucketName(), payload.getSource().getFileName(), fileSize,
 				payload.getSource().getDomain());
 		File tiff = fileUtility.getFileFromS3(fileLocation, serviceId);
-
+		
+System.out.println(tiff.getName() + "-------------------tiff: " + tiff.getAbsolutePath());
 		// Create Temporary Local Write Directory
 		String tempTopFolder = String.format("%s_%s", RASTER_LOCAL_DIRECTORY, serviceId);
 		File localWriteDir = new File(String.format("%s%s%s", tempTopFolder, File.separator, "writeDir"));
@@ -129,9 +130,13 @@ public class RasterGenerator {
 		// Create Format and Reader
 		GeoTiffFormat format = new GeoTiffFormat();
 		GridCoverageReader reader = format.getReader(tiff);
+		
+System.out.println(" aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa ");
 
 		// Read Original Coverage.
 		GridCoverage2D gridCoverage = (GridCoverage2D) reader.read(null);
+		
+System.out.println(" bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb ");
 
 		// Set the Crop Envelope
 		double xmin = payload.getBounds().getMinx();
@@ -142,6 +147,8 @@ public class RasterGenerator {
 		double[] min = { xmin, ymin };
 		double[] max = { xmax, ymax };
 		final GeneralEnvelope cropEnvelope = new GeneralEnvelope(min, max);
+		
+System.out.println(" ccccccccccccccccccccccccccccccccccccccccccccccccccccc ");
 
 		// Crop the Raster
 		final CoverageProcessor processor = CoverageProcessor.getInstance();
@@ -149,14 +156,23 @@ public class RasterGenerator {
 		param.parameter("Source").setValue(gridCoverage);
 		param.parameter("Envelope").setValue(cropEnvelope);
 		GridCoverage2D cropped = (GridCoverage2D) processor.doOperation(param);
+		
+System.out.println(" dddddddddddddddddddddddddddddddddddddddddddddddddddddddddd ");
 
 		// Writing Cropped Image to File
 		String newFilePath = new StringBuilder(localWriteDir.getAbsolutePath()).append(File.separator).append(cropped.getName().toString())
 				.append(".tif").toString();
 		final File s3File = new File(newFilePath);
 		GridCoverageWriter writer = format.getWriter(s3File);
+		
+System.out.println(" eeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee " + cropped.getName().toString());
+
 		try {
+			
+System.out.println(" fffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff ");
 			writer.write(cropped, null);
+System.out.println(" gggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggg ");
+
 		} catch (IllegalArgumentException | IOException e) {
 			LOGGER.warn("Error writing Grid Coverage file.", e);
 		} finally {
