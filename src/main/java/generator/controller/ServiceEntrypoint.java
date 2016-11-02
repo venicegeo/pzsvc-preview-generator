@@ -15,6 +15,8 @@
  **/
 package generator.controller;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -23,6 +25,7 @@ import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestMethod;
 import org.springframework.web.bind.annotation.RestController;
+
 import generator.components.RasterGenerator;
 import generator.components.ServiceThreadManager;
 import generator.model.ErrorResponse;
@@ -51,6 +54,8 @@ public class ServiceEntrypoint {
 	@Autowired 
 	private ServiceThreadManager serviceThreadManager;
 	
+	private final static Logger LOGGER = LoggerFactory.getLogger(ServiceEntrypoint.class);
+	
 	/**
 	 * Entry point for raw post accepting s3 location of the raster resource and bounding box 
 	 * to parse and return the location of the newly created s3 resource with the given bounding box.
@@ -65,7 +70,7 @@ public class ServiceEntrypoint {
 		try {
 				dataResource = rasterGenerator.cropRasterCoverage(request, "123456");
 			} catch (Exception e) {
-				e.printStackTrace();
+				LOGGER.error("Error Cropping Raster.", e);
 				return new ResponseEntity<ErrorResponse>(new ErrorResponse(e.getMessage()), HttpStatus.INTERNAL_SERVER_ERROR);
 			}
 		
@@ -91,7 +96,7 @@ public class ServiceEntrypoint {
 			JobResponse job = new JobResponse(serviceThreadManager.processRasterAsync(request));
 			return new ResponseEntity<JobResponse>(job, HttpStatus.OK);
 		} catch (Exception e) {
-			e.printStackTrace();
+			LOGGER.error("Error Cropping Raster.", e);
 			return new ResponseEntity<ErrorResponse>(new ErrorResponse(e.getMessage()), HttpStatus.INTERNAL_SERVER_ERROR);
 		}
 	}
@@ -107,7 +112,7 @@ public class ServiceEntrypoint {
 		try {
 			return new ResponseEntity<StatusUpdate>(serviceThreadManager.getJobStatus(serviceId), HttpStatus.OK);
 		} catch (Exception e) {
-			e.printStackTrace();
+			LOGGER.error("Error Getting Status.", e);
 			return new ResponseEntity<ErrorResponse>(new ErrorResponse(e.getMessage()), HttpStatus.INTERNAL_SERVER_ERROR);
 		}
 	}
@@ -123,7 +128,7 @@ public class ServiceEntrypoint {
 		try {
 			return new ResponseEntity<DataResource>(serviceThreadManager.getServiceResult(serviceId), HttpStatus.OK);
 		} catch (Exception e) {
-			e.printStackTrace();
+			LOGGER.error("Error Getting Result.", e);
 			return new ResponseEntity<ErrorResponse>(new ErrorResponse(e.getMessage()), HttpStatus.INTERNAL_SERVER_ERROR);
 		}
 	}
@@ -140,7 +145,7 @@ public class ServiceEntrypoint {
 			serviceThreadManager.deleteService(serviceId);
 			return new ResponseEntity(HttpStatus.OK);
 		} catch (Exception e) {
-			e.printStackTrace();
+			LOGGER.error("Error Cancelling Job.", e);
 			return new ResponseEntity<ErrorResponse>(new ErrorResponse(e.getMessage()), HttpStatus.INTERNAL_SERVER_ERROR);
 		}
 	}

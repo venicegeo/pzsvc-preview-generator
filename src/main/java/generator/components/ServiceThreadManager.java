@@ -15,6 +15,7 @@
  **/
 package generator.components;
 
+import java.io.IOException;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.concurrent.Future;
@@ -23,7 +24,11 @@ import javax.annotation.PostConstruct;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
+import org.springframework.web.client.ResourceAccessException;
 
+import com.amazonaws.AmazonClientException;
+
+import exception.InvalidInputException;
 import generator.model.RasterCropRequest;
 import generator.model.ServiceResource;
 import model.data.DataResource;
@@ -56,9 +61,8 @@ public class ServiceThreadManager {
 
 	/**
 	 * Asynchronously processing raster image
-	 * @throws Exception 
 	 */
-	public String processRasterAsync(RasterCropRequest payload) throws Exception {
+	public String processRasterAsync(RasterCropRequest payload) throws AmazonClientException, InvalidInputException, IOException, InterruptedException {
 		String id = uuidFactory.getUUID();
 		
 		// No need to keep track of threads for now
@@ -69,19 +73,15 @@ public class ServiceThreadManager {
 
 	/**
 	 * Returns job status
-	 * 
-	 * @throws Exception
 	 */
-	public StatusUpdate getJobStatus(String serviceId) throws Exception {
+	public StatusUpdate getJobStatus(String serviceId) throws ResourceAccessException, InterruptedException {
 		return mongoAccessor.getServiceResourceById(serviceId).getStatus();
 	}
 
 	/**
 	 * Returns job result
-	 * 
-	 * @throws Exception
 	 */
-	public DataResource getServiceResult(String serviceId) throws Exception {
+	public DataResource getServiceResult(String serviceId) throws ResourceAccessException, InterruptedException {
 		return mongoAccessor.getServiceResourceById(serviceId).getResult();
 	}
 	
@@ -90,7 +90,7 @@ public class ServiceThreadManager {
 	 * 
 	 * @throws Exception
 	 */
-	public void deleteService(String serviceId) throws Exception {
+	public void deleteService(String serviceId) {
 		mongoAccessor.removeJob(serviceId);
 	}
 }
