@@ -31,6 +31,7 @@ import org.geotools.geometry.GeneralEnvelope;
 import org.geotools.resources.image.ImageUtilities;
 import org.opengis.coverage.grid.GridCoverageReader;
 import org.opengis.coverage.grid.GridCoverageWriter;
+import org.opengis.parameter.GeneralParameterValue;
 import org.opengis.parameter.ParameterValueGroup;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -156,8 +157,8 @@ public class RasterGenerator {
 		final File s3File = new File(newFilePath);
 		GridCoverageWriter writer = format.getWriter(s3File);
 		try {
-			writer.write(cropped, null);
-		} catch (IllegalArgumentException | IOException e) {
+			writer.write(cropped, new GeneralParameterValue[0]);
+		} catch (IOException e) {
 			LOGGER.warn("Error writing Grid Coverage file.", e);
 		} finally {
 			try {
