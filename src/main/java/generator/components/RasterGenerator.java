@@ -63,6 +63,7 @@ import org.geotools.resources.image.ImageUtilities;
  * 
  * Service to crop the raster resource. It will read raster from S3 to local disk, 
  * crop it, and upload it back up to the same s3 bucket.
+ * Force
  * 
  * @author Sonny.Saniev
  * 
