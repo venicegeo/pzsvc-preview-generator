@@ -19,6 +19,7 @@ import static org.junit.Assert.assertTrue;
 
 import java.io.File;
 import java.io.IOException;
+import java.util.concurrent.Future;
 
 import org.junit.Before;
 import org.junit.Test;
@@ -106,5 +107,13 @@ public class RasterGeneratorTests {
 		// Ensure the directory has been cleaned up
 		File file = new File(String.format("%s_%s", "tmp", "123456"));
 		assertTrue(file.exists() == false);
+	}
+
+	/**
+	 * Tests an Async run instance of the Preview Generator
+	 */
+	@Test
+	public void testAsyncRun() throws AmazonClientException, InvalidInputException, IOException, InterruptedException {
+		Future<String> future = rasterGenerator.run(mockRequest, "123456");
 	}
 }
