@@ -38,6 +38,7 @@ import generator.model.BoundingBoxInfo;
 import generator.model.RasterCropRequest;
 import generator.model.S3StoreInfo;
 import model.data.DataResource;
+import model.data.type.RasterDataType;
 import util.UUIDFactory;
 
 /**
@@ -72,10 +73,10 @@ public class RasterGeneratorTests {
 		// Initialize common test ata
 		mockRequest.setFunction("crop");
 		BoundingBoxInfo boundingBox = new BoundingBoxInfo();
-		boundingBox.setMinx(-140);
-		boundingBox.setMaxx(-60);
-		boundingBox.setMiny(10);
-		boundingBox.setMaxy(70);
+		boundingBox.setMinx(-140.00);
+		boundingBox.setMaxx(-60.00);
+		boundingBox.setMiny(10.00);
+		boundingBox.setMaxy(70.00);
 		mockRequest.setBounds(boundingBox);
 		S3StoreInfo storeInfo = new S3StoreInfo();
 		storeInfo.setBucketName("test");
@@ -86,8 +87,10 @@ public class RasterGeneratorTests {
 		// Set the test data path
 		testDataPath = "src" + File.separator + "test" + File.separator + "resources" + File.separator + "world.tif";
 		testFile = new File(testDataPath);
+
 		// When the Raster Generator attempts to get the file, return our test file
 		Mockito.doReturn(testFile).when(fileUtility).getFileFromS3(Mockito.any(), Mockito.anyString());
+
 		// Report a file name pushed to S3 when run is complete
 		Mockito.doReturn("Output.tif").when(fileUtility).writeFileToS3(Mockito.any(), Mockito.any());
 	}
@@ -99,6 +102,9 @@ public class RasterGeneratorTests {
 	public void testCropRaster() throws AmazonClientException, InvalidInputException, IOException, InterruptedException {
 		DataResource dataResource = rasterGenerator.cropRasterCoverage(mockRequest, "123456");
 		assertTrue(dataResource != null);
+		assertTrue(dataResource.getDataType() instanceof RasterDataType);
+		// Ensure the directory has been cleaned up
+		File file = new File(String.format("%s_%s", "tmp", "123456"));
+		assertTrue(file.exists() == false);
 	}
-
 }

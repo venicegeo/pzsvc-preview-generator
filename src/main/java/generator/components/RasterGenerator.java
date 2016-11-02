@@ -23,7 +23,6 @@ import java.util.concurrent.Future;
 
 import javax.media.jai.PlanarImage;
 
-import org.apache.commons.io.FileUtils;
 import org.geotools.coverage.grid.GridCoverage2D;
 import org.geotools.coverage.processing.CoverageProcessor;
 import org.geotools.gce.geotiff.GeoTiffFormat;
@@ -126,7 +125,7 @@ public class RasterGenerator {
 		String tempTopFolder = String.format("%s_%s", RASTER_LOCAL_DIRECTORY, serviceId);
 		File localWriteDir = new File(String.format("%s%s%s", tempTopFolder, File.separator, "writeDir"));
 		localWriteDir.mkdir();
-		
+
 		// Create Format and Reader
 		GeoTiffFormat format = new GeoTiffFormat();
 		GridCoverageReader reader = format.getReader(tiff);
@@ -155,10 +154,15 @@ public class RasterGenerator {
 		String newFilePath = new StringBuilder(localWriteDir.getAbsolutePath()).append(File.separator).append(cropped.getName().toString())
 				.append(".tif").toString();
 		final File s3File = new File(newFilePath);
+		if (s3File.exists() == false) {
+			s3File.getParentFile().mkdirs();
+			s3File.createNewFile();
+		}
 		GridCoverageWriter writer = format.getWriter(s3File);
+
 		try {
 			writer.write(cropped, new GeneralParameterValue[0]);
-		} catch (IOException e) {
+		} catch (IllegalArgumentException | IOException e) {
 			LOGGER.warn("Error writing Grid Coverage file.", e);
 		} finally {
 			try {
