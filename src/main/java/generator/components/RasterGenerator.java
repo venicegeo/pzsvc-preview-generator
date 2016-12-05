@@ -52,6 +52,7 @@ import model.data.type.RasterDataType;
 import model.job.JobProgress;
 import model.job.metadata.ResourceMetadata;
 import model.status.StatusUpdate;
+import util.PiazzaLogger;
 
 /**
  * 
@@ -67,7 +68,9 @@ public class RasterGenerator {
 	private MongoAccessor mongoAccessor;
 	@Autowired
 	private S3FileUtility fileUtility;
-
+	@Autowired
+	private PiazzaLogger piazzaLogger;
+	
 	@Value("${raster.temp.directory}")
 	private String RASTER_LOCAL_DIRECTORY;
 
