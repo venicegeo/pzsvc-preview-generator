@@ -15,6 +15,7 @@
  **/
 package generator.controller;
 
+import org.apache.commons.lang.exception.ExceptionUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -129,7 +130,7 @@ public class ServiceEntrypoint {
 			return new ResponseEntity<StatusUpdate>(serviceThreadManager.getJobStatus(serviceId), HttpStatus.OK);
 		} catch (Exception e) {
 			LOGGER.error("Error Getting Status.", e);
-			pzLogger.log(String.format("Error Getting Status. %s", e.getMessage()), Severity.ERROR, new AuditElement("pz-svcs-prevgen", "errorGettingStatus", serviceId));
+			pzLogger.log(String.format("Error Getting Status. %s", ExceptionUtils.getStackTrace(e)), Severity.ERROR, new AuditElement("pz-svcs-prevgen", "errorGettingStatus", serviceId));
 			return new ResponseEntity<ErrorResponse>(new ErrorResponse(e.getMessage()), HttpStatus.INTERNAL_SERVER_ERROR);
 		}
 	}

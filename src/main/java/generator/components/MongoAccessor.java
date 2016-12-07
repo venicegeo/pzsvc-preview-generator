@@ -21,6 +21,8 @@ import javax.annotation.PreDestroy;
 import org.mongojack.DBQuery;
 import org.mongojack.DBUpdate;
 import org.mongojack.JacksonDBCollection;
+import org.mongojack.WriteResult;
+import org.mongojack.DBQuery.Query;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Value;
@@ -31,10 +33,14 @@ import com.mongodb.BasicDBObject;
 import com.mongodb.DBCollection;
 import com.mongodb.MongoClient;
 import com.mongodb.MongoClientURI;
+import com.mongodb.MongoException;
 import com.mongodb.MongoTimeoutException;
 
 import generator.model.ServiceResource;
 import model.job.JobProgress;
+import model.logger.AuditElement;
+import model.logger.Severity;
+import model.service.metadata.Service;
 
 /**
  * Accessor for MongoDB instance to persist models.
@@ -151,6 +157,29 @@ public class MongoAccessor {
 	public void updateJobProgress(String jobId, JobProgress progress) {
 		getJobCollection().update(DBQuery.is("jobId", jobId), DBUpdate.set("progress", progress));
 	}
+	
+	/**
+	 * 
+	 * @param sMetadata
+	 * @return
+	 */
+	public String update(ServiceResource serviceResource) {
+		String result = "";
+		try {
+			DBCollection collection = mongoClient.getDB(DATABASE_NAME).getCollection(JOB_COLLECTION_NAME);
+			JacksonDBCollection<ServiceResource, String> coll = JacksonDBCollection.wrap(collection, ServiceResource.class, String.class);
+
+			Query query = DBQuery.is("serviceResourceId", serviceResource.getServiceResourceId());
+			WriteResult<ServiceResource, String> writeResult = coll.update(query, serviceResource);
+		
+			// Return the id that was used
+			return serviceResource.getServiceResourceId().toString();
+		} catch (MongoException ex) {
+			String message = String.format("Error Updating Mongo ServiceResource entry : %s", ex.getMessage());
+			LOGGER.error(message, ex);
+		}
+		return result;
+	}
 
 	/**
 	 * Deletes a Job entry.
@@ -158,8 +187,8 @@ public class MongoAccessor {
 	 * @param serviceId
 	 *            The Id of the job to delete
 	 */
-	public void removeJob(String serviceId) {
-		getJobCollection().remove(DBQuery.is("serviceId", serviceId));
+	public void removeJob(String serviceResourceId) {
+		getJobCollection().remove(DBQuery.is("serviceResourceId", serviceResourceId));
 	}
 
 	/**

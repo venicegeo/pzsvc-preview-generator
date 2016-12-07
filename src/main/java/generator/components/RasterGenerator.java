@@ -85,24 +85,34 @@ public class RasterGenerator {
 	@Async
 	public Future<String> run(RasterCropRequest payload, String id)
 			throws AmazonClientException, InvalidInputException, IOException, InterruptedException {
+		
+		// persist ServiceResource pre-run
+		ServiceResource serviceResource = new ServiceResource();
+		serviceResource.setServiceResourceId(id);
+		int percent = (new SecureRandom()).nextInt(101);
+		
+		JobProgress jobProgress = new JobProgress(percent);
+		StatusUpdate statusUpdate = new StatusUpdate(StatusUpdate.STATUS_RUNNING);
+		statusUpdate.setProgress(jobProgress);
+		serviceResource.setStatus(statusUpdate);
+		mongoAccessor.addServiceResource(serviceResource);
+		LOGGER.info("Updating mongo with running status PRIOR to run.");
+		
 		// Crop raster
 		DataResource dataResource = cropRasterCoverage(payload, id);
 
+		LOGGER.info("Updating mongo with complete status AFTER crop.");
 		// Create storage model
-		ServiceResource serviceResource = new ServiceResource();
-		serviceResource.setServiceResourceId(id);
-		// Generate a random number
-		Random rand = new SecureRandom();
-		// Need to include 100%
-		int percent = rand.nextInt(101);
-		JobProgress jobProgress = new JobProgress(percent);
-		StatusUpdate statusUpdate = new StatusUpdate(StatusUpdate.STATUS_SUCCESS);
+		//ServiceResource newServiceResource = new ServiceResource();
+		percent = 100;
+		jobProgress = new JobProgress(percent);
+		statusUpdate = new StatusUpdate(StatusUpdate.STATUS_SUCCESS);
 		statusUpdate.setProgress(jobProgress);
 		serviceResource.setStatus(statusUpdate);
 		serviceResource.setResult(dataResource);
 
-		// persist ServiceResource
-		mongoAccessor.addServiceResource(serviceResource);
+		// update ServiceResource record
+		mongoAccessor.update(serviceResource);
 		return new AsyncResult<String>("crop raster thread");
 	}
 

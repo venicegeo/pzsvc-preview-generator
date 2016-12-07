@@ -36,6 +36,12 @@ import model.job.JobProgress;
 import model.status.StatusUpdate;
 import util.UUIDFactory;
 
+/**
+ * Thread manager to process raster crops. 
+ * 
+ * @author Sonny.Saniev
+ *
+ */
 @Component
 public class ServiceThreadManager {
 
@@ -75,14 +81,24 @@ public class ServiceThreadManager {
 	 * Returns job status
 	 */
 	public StatusUpdate getJobStatus(String serviceId) throws ResourceAccessException, InterruptedException {
-		return mongoAccessor.getServiceResourceById(serviceId).getStatus();
+		ServiceResource serviceResource = mongoAccessor.getServiceResourceById(serviceId);
+		if(serviceResource == null){
+			throw new ResourceAccessException(String.format("Service Job %s not found.", serviceId));
+		}
+
+		return serviceResource.getStatus();
 	}
 
 	/**
 	 * Returns job result
 	 */
 	public DataResource getServiceResult(String serviceId) throws ResourceAccessException, InterruptedException {
-		return mongoAccessor.getServiceResourceById(serviceId).getResult();
+		ServiceResource serviceResource = mongoAccessor.getServiceResourceById(serviceId);
+		if (serviceResource == null) {
+			throw new ResourceAccessException(String.format("Service Job %s not found.", serviceId));
+		}
+		
+		return serviceResource.getResult();
 	}
 	
 	/**
