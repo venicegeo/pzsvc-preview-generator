@@ -35,6 +35,7 @@ import model.data.DataResource;
 import model.logger.AuditElement;
 import model.logger.Severity;
 import model.response.JobResponse;
+import model.response.PiazzaResponse;
 import model.status.StatusUpdate;
 import util.PiazzaLogger;
 import util.UUIDFactory;
@@ -96,6 +97,19 @@ public class ServiceEntrypoint {
 	}
 
 	/**
+	 * Erase this endpoint! Testing only.
+	 * @throws Exception 
+	 */
+	@RequestMapping(value = "/crop2", method = RequestMethod.POST, produces={"application/json; charset=UTF-8"})
+	public ResponseEntity<?> processRasterResouceRawPost4(@RequestBody RasterCropRequest request) throws Exception {
+		
+		throw new Exception("Oh no, bad stuff happened!!!");
+
+//		return new ResponseEntity<ErrorResponse>(new ErrorResponse("Unknown error, result from external service...."), HttpStatus.BAD_REQUEST);
+
+	}
+	
+	/**
 	 * Entry point for accepting s3 location of the raster resource and bounding 
 	 * box info to parse and return the location of the newly cropped s3 resource.
 	 * This endpoint runs the crop service asynchronously on a new thread.
@@ -131,7 +145,7 @@ public class ServiceEntrypoint {
 		} catch (Exception e) {
 			LOGGER.error("Error Getting Status.", e);
 			pzLogger.log(String.format("Error Getting Status. %s", ExceptionUtils.getStackTrace(e)), Severity.ERROR, new AuditElement("pz-svcs-prevgen", "errorGettingStatus", serviceId));
-			return new ResponseEntity<ErrorResponse>(new ErrorResponse(e.getMessage()), HttpStatus.INTERNAL_SERVER_ERROR);
+			return new ResponseEntity<ErrorResponse>(new ErrorResponse(e.getMessage()), HttpStatus.NOT_FOUND);
 		}
 	}
 
