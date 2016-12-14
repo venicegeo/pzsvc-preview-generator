@@ -97,16 +97,12 @@ public class ServiceEntrypoint {
 	}
 
 	/**
-	 * Erase this endpoint! Testing only.
+	 * Endpoint for curl integration tests. Do not erase!
 	 * @throws Exception 
 	 */
 	@RequestMapping(value = "/crop2", method = RequestMethod.POST, produces={"application/json; charset=UTF-8"})
 	public ResponseEntity<?> processRasterResouceRawPost4(@RequestBody RasterCropRequest request) throws Exception {
-		
 		throw new Exception("Oh no, bad stuff happened!!!");
-
-//		return new ResponseEntity<ErrorResponse>(new ErrorResponse("Unknown error, result from external service...."), HttpStatus.BAD_REQUEST);
-
 	}
 	
 	/**
