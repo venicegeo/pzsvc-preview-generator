@@ -16,6 +16,7 @@
 package generator.controller;
 
 import org.apache.commons.lang.exception.ExceptionUtils;
+import org.elasticsearch.action.search.SearchResponse;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -35,7 +36,6 @@ import model.data.DataResource;
 import model.logger.AuditElement;
 import model.logger.Severity;
 import model.response.JobResponse;
-import model.response.PiazzaResponse;
 import model.status.StatusUpdate;
 import util.PiazzaLogger;
 import util.UUIDFactory;
@@ -62,7 +62,7 @@ public class ServiceEntrypoint {
 	private UUIDFactory uuidFactory;
 	@Autowired
 	private PiazzaLogger pzLogger;
-	
+
 	private final static Logger LOGGER = LoggerFactory.getLogger(ServiceEntrypoint.class);
 	
 	/**
@@ -189,6 +189,6 @@ public class ServiceEntrypoint {
 	 */
 	@RequestMapping(value = "/", method = RequestMethod.GET)
 	public String getInfo() {
-		return "Greetings Earthlings. pz-svcs-prevgen is alive!";
+		return "Great Scott! pz-svcs-prevgen is alive! \n Wait a minute. Wait a minute, Doc. Ah... Are you telling me that you built a time machine... out of preview-generator app?";
 	}
 }
