@@ -11,7 +11,7 @@ source $root/ci/vars.sh
 src=$root/target/pz-svcs-prevgen*.jar
 
 # Build Spring-boot JAR
-rm -rf $HOME/.m2/*
+rm -rf $HOME/.m2/repository/*
 [ -f $src ] || mvn clean package
 
 # stage the artifact for a mvn deploy
