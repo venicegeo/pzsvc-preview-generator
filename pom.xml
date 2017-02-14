@@ -97,7 +97,7 @@
 		<dependency>
 			<groupId>org.venice.piazza</groupId>
 			<artifactId>pz-jobcommon</artifactId>
-			<version>Sprint06-300-g821b014</version>
+			<version>ato-sprite-93-g5b8ca12</version>
 		</dependency>
 
 		<dependency>
