@@ -15,6 +15,8 @@
  **/
 package generator.controller;
 
+import javax.validation.Valid;
+
 import org.apache.commons.lang.exception.ExceptionUtils;
 import org.elasticsearch.action.search.SearchResponse;
 import org.slf4j.Logger;
@@ -115,7 +117,7 @@ public class ServiceEntrypoint {
 	 * @return ResponseEntity<?> of JobResponse or ErrorResponse
 	 */
 	@RequestMapping(value = "/cropasync", method = RequestMethod.POST, produces={"application/json; charset=UTF-8"})
-	public ResponseEntity<?> processRasterAsync(@RequestBody RasterCropRequest request) {
+	public ResponseEntity<?> processRasterAsync(@RequestBody @Valid RasterCropRequest request) {
 		pzLogger.log("Cropping raster async endpoint", Severity.INFORMATIONAL);
 		try {
 			JobResponse job = new JobResponse(serviceThreadManager.processRasterAsync(request));

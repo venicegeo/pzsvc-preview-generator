@@ -14,12 +14,24 @@
  * limitations under the License.
  **/
 package generator.model;
-/*
- * 
+
+import javax.validation.constraints.NotNull;
+
+import com.fasterxml.jackson.annotation.JsonProperty;
+
+/**
+ * @author Sonny.Saniev
+ *
+ * The model for payload
  */
 public class RasterCropRequest {
+	@NotNull
 	public S3StoreInfo source;
+	
+	@NotNull
 	public String function;
+	
+	@NotNull
 	public BoundingBoxInfo bounds;
 	
 	public S3StoreInfo getSource() {
