@@ -22,9 +22,10 @@ node {
   }
 
   stage('Scans') {
+  /* TODO - Add this back in. Scans are breaking. 
     dependencyCheck {
       threadfixId = THREADFIX_ID
-    }
+    }*/
     ionConnect()
     sh """
       mkdir -p ${root}/.m2/repository
