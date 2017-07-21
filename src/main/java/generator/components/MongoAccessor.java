@@ -38,9 +38,6 @@ import com.mongodb.MongoTimeoutException;
 
 import generator.model.ServiceResource;
 import model.job.JobProgress;
-import model.logger.AuditElement;
-import model.logger.Severity;
-import model.service.metadata.Service;
 
 /**
  * Accessor for MongoDB instance to persist models.
@@ -58,9 +55,12 @@ public class MongoAccessor {
 	private String JOB_COLLECTION_NAME;
 	private MongoClient mongoClient;
 
-	private final static Logger LOGGER = LoggerFactory.getLogger(MongoAccessor.class);
+	private static final String SERVICE_RESOURCE_ID = "serviceResourceId";
+	
+	private static final Logger LOGGER = LoggerFactory.getLogger(MongoAccessor.class);
 
 	public MongoAccessor() {
+		// Expected for Component instantiation
 	}
 
 	@PostConstruct
@@ -114,7 +114,7 @@ public class MongoAccessor {
 	 * @throws InterruptedException
 	 */
 	public ServiceResource getServiceResourceById(String serviceResourceId) throws ResourceAccessException, InterruptedException {
-		BasicDBObject query = new BasicDBObject("serviceResourceId", serviceResourceId);
+		BasicDBObject query = new BasicDBObject(SERVICE_RESOURCE_ID, serviceResourceId);
 		ServiceResource serviceResource;
 
 		try {
@@ -169,7 +169,7 @@ public class MongoAccessor {
 			DBCollection collection = mongoClient.getDB(DATABASE_NAME).getCollection(JOB_COLLECTION_NAME);
 			JacksonDBCollection<ServiceResource, String> coll = JacksonDBCollection.wrap(collection, ServiceResource.class, String.class);
 
-			Query query = DBQuery.is("serviceResourceId", serviceResource.getServiceResourceId());
+			Query query = DBQuery.is(SERVICE_RESOURCE_ID, serviceResource.getServiceResourceId());
 			WriteResult<ServiceResource, String> writeResult = coll.update(query, serviceResource);
 		
 			// Return the id that was used
@@ -188,7 +188,7 @@ public class MongoAccessor {
 	 *            The Id of the job to delete
 	 */
 	public void removeJob(String serviceResourceId) {
-		getJobCollection().remove(DBQuery.is("serviceResourceId", serviceResourceId));
+		getJobCollection().remove(DBQuery.is(SERVICE_RESOURCE_ID, serviceResourceId));
 	}
 
 	/**

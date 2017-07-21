@@ -65,7 +65,9 @@ public class ServiceEntrypoint {
 	@Autowired
 	private PiazzaLogger pzLogger;
 
-	private final static Logger LOGGER = LoggerFactory.getLogger(ServiceEntrypoint.class);
+	private static final String AUDIT_ID = "pz-svcs-prevgen";
+	
+	private static final Logger LOGGER = LoggerFactory.getLogger(ServiceEntrypoint.class);
 	
 	/**
 	 * Entry point for raw post accepting s3 location of the raster resource and bounding box 
@@ -75,8 +77,9 @@ public class ServiceEntrypoint {
 	 *            Required payload
 	 * @return DataResource object or an error.
 	 */
+	@SuppressWarnings("rawtypes")
 	@RequestMapping(value = "/crop", method = RequestMethod.POST, produces={"application/json; charset=UTF-8"})
-	public ResponseEntity<?> processRasterResouceRawPost2(@RequestBody RasterCropRequest request) {
+	public ResponseEntity processRasterResouceRawPost2(@RequestBody RasterCropRequest request) {
 		
 		String serviceId = uuidFactory.getUUID();
 		DataResource dataResource=null;
@@ -91,7 +94,7 @@ public class ServiceEntrypoint {
 			}
 		
 		if (dataResource == null) {
-			pzLogger.log("Error occurred, data resource is empty.", Severity.ERROR, new AuditElement("pz-svcs-prevgen", "errorNonAsyncRasterCrop", serviceId));
+			pzLogger.log("Error occurred, data resource is empty.", Severity.ERROR, new AuditElement(AUDIT_ID, "errorNonAsyncRasterCrop", serviceId));
 			return new ResponseEntity<ErrorResponse>(new ErrorResponse("Unknown error, data resource is empty."), HttpStatus.INTERNAL_SERVER_ERROR);
 		}
 
@@ -116,15 +119,16 @@ public class ServiceEntrypoint {
 	 *            Required payload
 	 * @return ResponseEntity<?> of JobResponse or ErrorResponse
 	 */
+	@SuppressWarnings("rawtypes")
 	@RequestMapping(value = "/cropasync", method = RequestMethod.POST, produces={"application/json; charset=UTF-8"})
-	public ResponseEntity<?> processRasterAsync(@RequestBody @Valid RasterCropRequest request) {
+	public ResponseEntity processRasterAsync(@RequestBody @Valid RasterCropRequest request) {
 		pzLogger.log("Cropping raster async endpoint", Severity.INFORMATIONAL);
 		try {
 			JobResponse job = new JobResponse(serviceThreadManager.processRasterAsync(request));
 			return new ResponseEntity<JobResponse>(job, HttpStatus.OK);
 		} catch (Exception e) {
 			LOGGER.error("Error while cropping raster.", e);
-			pzLogger.log(String.format("Error while cropping raster. %s", e.getMessage()), Severity.ERROR, new AuditElement("pz-svcs-prevgen", "errorAsyncRasterCrop", "error"));
+			pzLogger.log(String.format("Error while cropping raster. %s", e.getMessage()), Severity.ERROR, new AuditElement(AUDIT_ID, "errorAsyncRasterCrop", "error"));
 			return new ResponseEntity<ErrorResponse>(new ErrorResponse(e.getMessage()), HttpStatus.INTERNAL_SERVER_ERROR);
 		}
 	}
@@ -136,13 +140,13 @@ public class ServiceEntrypoint {
 	 * @return
 	 */
 	@RequestMapping(value = "/cropasync/status/{serviceId}", method = RequestMethod.GET, produces={"application/json; charset=UTF-8"})
-	public ResponseEntity<?> processRasterAsyncGetStatus(@PathVariable(value = "serviceId") String serviceId) {
+	public ResponseEntity processRasterAsyncGetStatus(@PathVariable(value = "serviceId") String serviceId) {
 		pzLogger.log(String.format("Getting the status of running service %s", serviceId), Severity.INFORMATIONAL);
 		try {
 			return new ResponseEntity<StatusUpdate>(serviceThreadManager.getJobStatus(serviceId), HttpStatus.OK);
 		} catch (Exception e) {
 			LOGGER.error("Error Getting Status.", e);
-			pzLogger.log(String.format("Error Getting Status. %s", ExceptionUtils.getStackTrace(e)), Severity.ERROR, new AuditElement("pz-svcs-prevgen", "errorGettingStatus", serviceId));
+			pzLogger.log(String.format("Error Getting Status. %s", ExceptionUtils.getStackTrace(e)), Severity.ERROR, new AuditElement(AUDIT_ID, "errorGettingStatus", serviceId));
 			return new ResponseEntity<ErrorResponse>(new ErrorResponse(e.getMessage()), HttpStatus.NOT_FOUND);
 		}
 	}
@@ -153,14 +157,15 @@ public class ServiceEntrypoint {
 	 * @param serviceId
 	 * @return
 	 */
+	@SuppressWarnings("rawtypes")
 	@RequestMapping(value = "/cropasync/result/{serviceId}", method = RequestMethod.GET, produces={"application/json; charset=UTF-8"})
-	public ResponseEntity<?> processRasterAsyncGetResult(@PathVariable(value = "serviceId") String serviceId) {
+	public ResponseEntity processRasterAsyncGetResult(@PathVariable(value = "serviceId") String serviceId) {
 		pzLogger.log(String.format("Getting the result of service %s", serviceId), Severity.INFORMATIONAL);
 		try {
 			return new ResponseEntity<DataResource>(serviceThreadManager.getServiceResult(serviceId), HttpStatus.OK);
 		} catch (Exception e) {
 			LOGGER.error("Error Getting Result.", e);
-			pzLogger.log(String.format("Error Getting Result %s", e.getMessage()), Severity.ERROR, new AuditElement("pz-svcs-prevgen", "errorGettingResult", serviceId));
+			pzLogger.log(String.format("Error Getting Result %s", e.getMessage()), Severity.ERROR, new AuditElement(AUDIT_ID, "errorGettingResult", serviceId));
 			return new ResponseEntity<ErrorResponse>(new ErrorResponse(e.getMessage()), HttpStatus.INTERNAL_SERVER_ERROR);
 		}
 	}
@@ -171,15 +176,16 @@ public class ServiceEntrypoint {
 	 * @param serviceId
 	 * @return
 	 */
+	@SuppressWarnings("rawtypes")
 	@RequestMapping(value = "/cropasync/job/{serviceId}", method = RequestMethod.DELETE, produces={"application/json; charset=UTF-8"})
-	public ResponseEntity<?> processRasterAsyncDeleteJob(@PathVariable(value = "serviceId") String serviceId) {
+	public ResponseEntity processRasterAsyncDeleteJob(@PathVariable(value = "serviceId") String serviceId) {
 		pzLogger.log(String.format("Deleting running job %s", serviceId), Severity.INFORMATIONAL);
 		try {
 			serviceThreadManager.deleteService(serviceId);
 			return new ResponseEntity(HttpStatus.OK);
 		} catch (Exception e) {
 			LOGGER.error("Error Cancelling Job.", e);
-			pzLogger.log(String.format("Deleting running job %s", e.getMessage()), Severity.ERROR, new AuditElement("pz-svcs-prevgen", "errorDeletingJob", serviceId));
+			pzLogger.log(String.format("Deleting running job %s", e.getMessage()), Severity.ERROR, new AuditElement(AUDIT_ID, "errorDeletingJob", serviceId));
 			return new ResponseEntity<ErrorResponse>(new ErrorResponse(e.getMessage()), HttpStatus.INTERNAL_SERVER_ERROR);
 		}
 	}
