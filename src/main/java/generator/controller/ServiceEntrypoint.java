@@ -105,8 +105,9 @@ public class ServiceEntrypoint {
 	 * Endpoint for curl integration tests. Do not erase!
 	 * @throws Exception 
 	 */
+	@SuppressWarnings("rawtypes")
 	@RequestMapping(value = "/crop2", method = RequestMethod.POST, produces={"application/json; charset=UTF-8"})
-	public ResponseEntity<?> processRasterResouceRawPost4(@RequestBody RasterCropRequest request) throws Exception {
+	public ResponseEntity processRasterResouceRawPost4(@RequestBody RasterCropRequest request) throws Exception {
 		throw new Exception("Oh no, bad stuff happened!!!");
 	}
 	
@@ -139,6 +140,7 @@ public class ServiceEntrypoint {
 	 * @param serviceId
 	 * @return
 	 */
+	@SuppressWarnings("rawtypes")
 	@RequestMapping(value = "/cropasync/status/{serviceId}", method = RequestMethod.GET, produces={"application/json; charset=UTF-8"})
 	public ResponseEntity processRasterAsyncGetStatus(@PathVariable(value = "serviceId") String serviceId) {
 		pzLogger.log(String.format("Getting the status of running service %s", serviceId), Severity.INFORMATIONAL);
