@@ -49,7 +49,7 @@ public class ServiceThreadManager {
 	private UUIDFactory uuidFactory;
 	
 	@Autowired
-	private MongoAccessor mongoAccessor;
+	private DataAccessor dataAccessor;
 	
 	@Autowired
 	private RasterGenerator rasterGenerator;
@@ -81,7 +81,7 @@ public class ServiceThreadManager {
 	 * Returns job status
 	 */
 	public StatusUpdate getJobStatus(String serviceId) throws ResourceAccessException, InterruptedException {
-		ServiceResource serviceResource = mongoAccessor.getServiceResourceById(serviceId);
+		ServiceResource serviceResource = dataAccessor.getServiceResourceById(serviceId);
 		if(serviceResource == null){
 			throw new ResourceAccessException(String.format("Service Job %s not found.", serviceId));
 		}
@@ -93,7 +93,7 @@ public class ServiceThreadManager {
 	 * Returns job result
 	 */
 	public DataResource getServiceResult(String serviceId) throws ResourceAccessException, InterruptedException {
-		ServiceResource serviceResource = mongoAccessor.getServiceResourceById(serviceId);
+		ServiceResource serviceResource = dataAccessor.getServiceResourceById(serviceId);
 		if (serviceResource == null) {
 			throw new ResourceAccessException(String.format("Service Job %s not found.", serviceId));
 		}
@@ -107,6 +107,6 @@ public class ServiceThreadManager {
 	 * @throws Exception
 	 */
 	public void deleteService(String serviceId) {
-		mongoAccessor.removeJob(serviceId);
+		dataAccessor.removeJob(serviceId);
 	}
 }

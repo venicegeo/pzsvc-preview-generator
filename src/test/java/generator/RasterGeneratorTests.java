@@ -33,7 +33,7 @@ import org.springframework.test.util.ReflectionTestUtils;
 import com.amazonaws.AmazonClientException;
 
 import exception.InvalidInputException;
-import generator.components.MongoAccessor;
+import generator.components.DataAccessor;
 import generator.components.RasterGenerator;
 import generator.components.S3FileUtility;
 import generator.model.BoundingBoxInfo;
@@ -53,7 +53,7 @@ public class RasterGeneratorTests {
 	@Mock
 	private UUIDFactory uuidFactory;
 	@Mock
-	private MongoAccessor mongoAccessor;
+	private DataAccessor dataAccessor;
 	@Mock
 	private S3FileUtility fileUtility;
 	@InjectMocks
