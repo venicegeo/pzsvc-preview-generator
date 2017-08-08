@@ -65,7 +65,7 @@ import util.PiazzaLogger;
 @Component
 public class RasterGenerator {
 	@Autowired
-	private MongoAccessor mongoAccessor;
+	private DataAccessor dataAccessor;
 	@Autowired
 	private S3FileUtility fileUtility;
 	@Autowired
@@ -95,13 +95,13 @@ public class RasterGenerator {
 		StatusUpdate statusUpdate = new StatusUpdate(StatusUpdate.STATUS_RUNNING);
 		statusUpdate.setProgress(jobProgress);
 		serviceResource.setStatus(statusUpdate);
-		mongoAccessor.addServiceResource(serviceResource);
-		LOGGER.info("Updating mongo with running status PRIOR to run.");
+		dataAccessor.addServiceResource(serviceResource);
+		LOGGER.info("Updating DB with running status PRIOR to run.");
 		
 		// Crop raster
 		DataResource dataResource = cropRasterCoverage(payload, id);
 
-		LOGGER.info("Updating mongo with complete status AFTER crop.");
+		LOGGER.info("Updating DB with complete status AFTER crop.");
 		// Create storage model
 		//ServiceResource newServiceResource = new ServiceResource();
 		percent = 100;
@@ -112,7 +112,7 @@ public class RasterGenerator {
 		serviceResource.setResult(dataResource);
 
 		// update ServiceResource record
-		mongoAccessor.update(serviceResource);
+		dataAccessor.update(serviceResource);
 		return new AsyncResult<String>("crop raster thread");
 	}
 
