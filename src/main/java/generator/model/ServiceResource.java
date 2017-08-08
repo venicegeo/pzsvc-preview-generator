@@ -23,7 +23,7 @@ import model.data.DataResource;
 import model.status.StatusUpdate;
 
 /**
- * MongoDB persistence model.
+ * Database Persistence model.
  * 
  * @author Sonny.Saniev
  * 
