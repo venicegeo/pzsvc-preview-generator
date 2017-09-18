@@ -16,10 +16,10 @@
 package generator.model;
 
 public class BoundingBoxInfo {
-	public double minx;
-	public double miny;
-	public double maxx;
-	public double maxy;
+	private double minx;
+	private double miny;
+	private double maxx;
+	private double maxy;
 
 	public double getMinx() {
 		return minx;

@@ -169,7 +169,10 @@ public class RasterGenerator {
 		final File s3File = new File(newFilePath);
 		if (s3File.exists() == false) {
 			s3File.getParentFile().mkdirs();
-			s3File.createNewFile();
+			boolean fileCreated = s3File.createNewFile();
+			if (!fileCreated) {
+				LOGGER.warn(String.format("File %s could not be created.", newFilePath));
+			}
 		}
 		GridCoverageWriter writer = format.getWriter(s3File);
 
@@ -202,8 +205,7 @@ public class RasterGenerator {
 
 		cropped.dispose(true);
 		try {
-			if (reader != null)
-				reader.dispose();
+			reader.dispose();
 		} catch (Exception e) {
 			LOGGER.error("Error disposing the Grid Coverage Reader.", e);
 		}

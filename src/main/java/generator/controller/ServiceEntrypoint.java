@@ -107,8 +107,8 @@ public class ServiceEntrypoint {
 	 */
 	@SuppressWarnings("rawtypes")
 	@RequestMapping(value = "/crop2", method = RequestMethod.POST, produces={"application/json; charset=UTF-8"})
-	public ResponseEntity processRasterResouceRawPost4(@RequestBody RasterCropRequest request) throws Exception {
-		throw new Exception("Oh no, bad stuff happened!!!");
+	public ResponseEntity processRasterResouceRawPost4(@RequestBody RasterCropRequest request) throws NullPointerException {
+		throw new NullPointerException("Oh no, bad stuff happened!!!");
 	}
 	
 	/**

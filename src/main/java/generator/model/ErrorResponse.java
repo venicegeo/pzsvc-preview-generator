@@ -23,12 +23,12 @@ package generator.model;
  */
 public class ErrorResponse {
 	private String type = "error";
-	public String message;
+	private String message;
 
 	public ErrorResponse(String message) {
 		this.message = message;
 	}
-	
+
 	/**
 	 * Gets the type of this response.
 	 * 
@@ -36,5 +36,9 @@ public class ErrorResponse {
 	 */
 	public String getType() {
 		return type;
+	}
+
+	public String getMessage() {
+		return message;
 	}
 }

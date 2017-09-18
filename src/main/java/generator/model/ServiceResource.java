@@ -32,9 +32,9 @@ import model.status.StatusUpdate;
 @JsonIgnoreProperties(ignoreUnknown = true)
 public class ServiceResource {
 
-	public String serviceResourceId;
-	public StatusUpdate status;
-	public DataResource result;
+	private String serviceResourceId;
+	private StatusUpdate status;
+	private DataResource result;
 
 	public String getServiceResourceId() {
 		return serviceResourceId;

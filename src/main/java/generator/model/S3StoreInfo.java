@@ -22,9 +22,9 @@ package generator.model;
  * 
  */
 public class S3StoreInfo {
-	public String domain;
-	public String bucketName;
-	public String fileName;
+	private String domain;
+	private String bucketName;
+	private String fileName;
 
 	public String getDomain() {
 		return domain;
