@@ -18,7 +18,6 @@ package generator.controller;
 import javax.validation.Valid;
 
 import org.apache.commons.lang.exception.ExceptionUtils;
-import org.elasticsearch.action.search.SearchResponse;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
