@@ -21,36 +21,44 @@ node {
   def appName = "pz-svcs-prevgen-${appvers}"
 
   stage('Archive') {
-    // Build
+    // Build Tarball
+    def targetFiles = "pz-svcs-prevgen.jar manifest.jenkins.yml"
+    def artifactDirectory = "maven-artifact"
+    sh "mkdir -p ${root}/${artifactDirectory}"
+    def tarball = "pz-svcs-prevgen.tar.gz"
     sh """
       sed -i 's,\${env.ARTIFACT_STORAGE_URL},${env.ARTIFACT_STORAGE_URL},g' pom.xml
       ${mvn}/bin/mvn clean package -U -Dmaven.repo.local=${root}
       cp ${root}/target/pz-svcs-prevgen-0.0.1-SNAPSHOT.jar ${root}/pz-svcs-prevgen.jar
+      tar cvvzf ${tarball} ${targetFiles}
+      mv ${tarball} ${root}/${artifactDirectory}/${tarball}
     """
     // Check if exists already
-    def getDependencyStatus = sh(script: """mvn -X --settings ~/.m2/settings.xml dependency:get \
-      -Dmaven.repo.local="${root}/.m2/repository" \
-      -DrepositoryId=nexus \
-      -DartifactId=pz-svcs-prevgen \
-      -Dversion=${appvers} \
-      -DgroupId="org.venice.piazza" \
-      -Dpackaging=jar \
-      -DremoteRepositories="nexus::default::${env.ARTIFACT_STORAGE_DEPLOY_URL}" \
-    """, returnStatus: true)
-    echo "dependency status = ${getDependencyStatus}"
-    if (getDependencyStatus == 0) {
-      echo "Artifact version ${appvers} exists in Nexus, nothing to do"
-    } else {
-     sh """mvn -X --settings ~/.m2/settings.xml deploy:deploy-file -Dfile=${root}/pz-svcs-prevgen.jar \
-        -DrepositoryId=nexus \
-        -Durl="${env.ARTIFACT_STORAGE_DEPLOY_URL}" \
-        -DgroupId="org.venice.piazza" \
-        -DgeneratePom=false \
-        -Dpackaging=jar \
+    dir("${root}/${artifactDirectory}") {
+      def getDependencyStatus = sh(script: """mvn -X --settings ~/.m2/settings.xml dependency:get \
         -Dmaven.repo.local="${root}/.m2/repository" \
+        -DrepositoryId=nexus \
         -DartifactId=pz-svcs-prevgen \
-        -Dversion=${appvers}
-      """
+        -Dversion=${appvers} \
+        -DgroupId="org.venice.piazza" \
+        -Dpackaging=tar.gz \
+        -DremoteRepositories="nexus::default::${env.ARTIFACT_STORAGE_DEPLOY_URL}" \
+      """, returnStatus: true)
+      echo "dependency status = ${getDependencyStatus}"
+      if (getDependencyStatus == 0) {
+        echo "Artifact version ${appvers} exists in Nexus, nothing to do"
+      } else {
+       sh """mvn -X --settings ~/.m2/settings.xml deploy:deploy-file -Dfile=${root}/${artifactDirectory}/${tarball} \
+          -DrepositoryId=nexus \
+          -Durl="${env.ARTIFACT_STORAGE_DEPLOY_URL}" \
+          -DgroupId="org.venice.piazza" \
+          -DgeneratePom=false \
+          -Dpackaging=tar.gz \
+          -Dmaven.repo.local="${root}/.m2/repository" \
+          -DartifactId=pz-svcs-prevgen \
+          -Dversion=${appvers}
+        """
+      }
     }
   }
 
