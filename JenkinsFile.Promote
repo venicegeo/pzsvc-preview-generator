@@ -4,7 +4,7 @@ node {
   def root = pwd()
   def mvn = tool 'M3'
   def appvers = "${env.PROMOTE_VERSION}"
-  def appBaseName = "pzsvc-preview-generator"
+  def appBaseName = "pz-svcs-prevgen"
   def appName
   
   if(!fileExists('.cf')) {
