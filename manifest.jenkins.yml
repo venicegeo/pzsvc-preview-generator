@@ -6,8 +6,6 @@ applications:
   memory: 1024M
   instances: 1
   timeout: 80
-  services:
-    - pz-elasticsearch
   env:
     SPRING_PROFILES_ACTIVE: cloud
     JBP_CONFIG_OPEN_JDK_JRE: '{ memory_calculator : { memory_sizes : { heap : 512m } } }'
