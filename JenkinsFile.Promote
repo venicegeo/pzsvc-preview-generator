@@ -94,7 +94,7 @@ node {
       }
 
       // Assign Routes
-      def legacyAppNames = sh(script: "cf routes | grep \"${appBaseName} \" | awk '{print \$4}'", returnStdout: true)
+      def legacyAppNames = sh(script: "cf routes | grep \"${appBaseName}\" | awk '{print \$4}'", returnStdout: true)
       sh "cf map-route ${appName} ${env.PROMOTE_DOMAIN} --hostname ${appBaseName}"
 
       // Delete old Routes
