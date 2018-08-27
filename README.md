@@ -3,7 +3,7 @@ This is an example of a user service which generates thumbnail previews of image
 
 ***
 ## Requirements
-Before building and/or running the pz-search-query service, please ensure that the following components are available and/or installed, as necessary:
+Before building and/or running the pzsvc-preview-generator service, please ensure that the following components are available and/or installed, as necessary:
 - [Java](http://www.oracle.com/technetwork/java/javase/downloads/index.html) (JDK for building/developing, otherwise JRE is fine)
 - [ElasticSearch](https://www.elastic.co/)
 - [Eclipse](https://www.eclipse.org/downloads/), or any maven-supported IDE
@@ -40,13 +40,13 @@ To build and run the preview generator locally, pzsvc-preview-generator can be r
 
 `mvn clean install -U spring-boot:run`
 
-This will run a Tomcat server locally with the Gateway service running on port 8086 (unless port was modified per 'Configuring' section).
+This will run a Tomcat server locally with the service running on port 8086 (unless port was modified per 'Configuring' section).
 
 > __Note:__ This Maven build depends on having access to the `Piazza-Group` repository as defined in the `pom.xml` file. If your Maven configuration does not specify credentials to this Repository, this Maven build will fail.
 
 ### Running Unit Tests
 
-To run the ServiceController unit tests from the main directory, run the following command:
+To run the pzsvc-preview-generator unit tests from the main directory, run the following command:
 
 	$ mvn test
 
